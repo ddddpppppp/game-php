@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cash App Payment</title>
+    <style>
+        :root {
+            --cashapp-green: #00D632;
+            --cashapp-black: #000000;
+            --cashapp-white: #FFFFFF;
+            --cashapp-gray: #F8F8F8;
+            --cashapp-light-gray: #EEEEEE;
+            --cashapp-text: #2B2B2B;
+            --cashapp-red: #FF3B30;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--cashapp-gray);
+            color: var(--cashapp-text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .header {
+            background-color: var(--cashapp-white);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background-color: var(--cashapp-green);
+            color: var(--cashapp-white);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-right: 12px;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--cashapp-black);
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .payment-container {
+            background-color: var(--cashapp-white);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .payment-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .payment-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .payment-subtitle {
+            font-size: 18px;
+            color: #666;
+        }
+
+        .payment-amount {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .qr-container {
+            background-color: var(--cashapp-white);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .qr-code {
+            width: 280px;
+            height: 280px;
+            background-color: var(--cashapp-white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .qr-code img {
+            width: 100%;
+            height: 100%;
+        }
+
+        .qr-logo {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background-color: var(--cashapp-white);
+            border-radius: 12px;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qr-logo-inner {
+            width: 50px;
+            height: 50px;
+            background-color: var(--cashapp-green);
+            color: var(--cashapp-white);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .payment-details {
+            margin-top: 30px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--cashapp-light-gray);
+        }
+
+        .detail-label {
+            color: #666;
+        }
+
+        .detail-value {
+            font-weight: 500;
+            text-align: right;
+        }
+
+        .payment-instructions {
+            margin-top: 30px;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .instruction-step {
+            margin-bottom: 15px;
+        }
+
+        .instruction-number {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background-color: var(--cashapp-green);
+            color: var(--cashapp-white);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            margin-right: 8px;
+        }
+
+        .timer-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .timer {
+            font-size: 20px;
+            font-weight: bold;
+            color: #FF3B30;
+        }
+
+        .footer {
+            background-color: var(--cashapp-white);
+            padding: 20px 40px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            margin-top: auto;
+        }
+
+        /* 状态显示的新样式 */
+        .status-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .status-icon {
+            width: 120px;
+            height: 120px;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .status-icon-completed {
+            background-color: rgba(0, 214, 50, 0.1);
+            color: var(--cashapp-green);
+        }
+
+        .status-icon-cancelled {
+            background-color: rgba(255, 59, 48, 0.1);
+            color: var(--cashapp-red);
+        }
+
+        .status-icon i {
+            font-size: 60px;
+        }
+
+        .status-title {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .status-title-completed {
+            color: var(--cashapp-green);
+        }
+
+        .status-title-cancelled {
+            color: var(--cashapp-red);
+        }
+
+        .status-message {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 30px;
+            max-width: 400px;
+        }
+
+        .status-details {
+            background-color: var(--cashapp-gray);
+            padding: 20px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 20px;
+            }
+
+            .payment-container {
+                padding: 20px;
+            }
+
+            .payment-title {
+                font-size: 24px;
+            }
+
+            .payment-amount {
+                font-size: 36px;
+            }
+
+            .qr-code {
+                width: 220px;
+                height: 220px;
+            }
+
+            .status-icon {
+                width: 100px;
+                height: 100px;
+            }
+
+            .status-icon i {
+                font-size: 50px;
+            }
+
+            .status-title {
+                font-size: 28px;
+            }
+        }
+    </style>
+    <!-- 添加Font Awesome图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+
+<body>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">$</div>
+            <div class="logo-text">Cash App</div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="payment-container">
+            {if $status == 'cancelled'}
+            <div class="status-container">
+                <div class="status-icon status-icon-cancelled">
+                    <i class="fas fa-times"></i>
+                </div>
+                <div class="status-title status-title-cancelled">Order Cancelled</div>
+                <div class="status-message">This payment has been cancelled and is no longer valid.</div>
+                <div class="status-details">
+                    <div class="detail-item">
+                        <div class="detail-label">Amount</div>
+                        <div class="detail-value">${$amount}</div>
+                    </div>
+                    {if $description}
+                    <div class="detail-item">
+                        <div class="detail-label">Description</div>
+                        <div class="detail-value">{$description}</div>
+                    </div>
+                    {/if}
+                </div>
+            </div>
+            {elseif $status == 'completed'}
+            <div class="status-container">
+                <div class="status-icon status-icon-completed">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div class="status-title status-title-completed">Payment Successful</div>
+                <div class="status-message">Your payment has been successfully processed. Thank you!</div>
+                <div class="status-details">
+                    <div class="detail-item">
+                        <div class="detail-label">Amount</div>
+                        <div class="detail-value">${$amount}</div>
+                    </div>
+                    {if $description}
+                    <div class="detail-item">
+                        <div class="detail-label">Description</div>
+                        <div class="detail-value">{$description}</div>
+                    </div>
+                    {/if}
+                </div>
+            </div>
+            {else}
+            <div class="payment-header">
+                <div class="payment-title">Scan to Pay with Cash App</div>
+                <div class="payment-subtitle">Complete your payment by scanning the QR code below</div>
+            </div>
+
+            <div class="payment-amount">$<span id="amount">{$amount}</span></div>
+
+            <div class="qr-container">
+                <div class="qr-code">
+                    <img src="{$qrCode}" alt="Cash App Payment QR Code">
+                    <div class="qr-logo">
+                        <div class="qr-logo-inner">$</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="payment-details">
+                <div class="detail-item">
+                    <div class="detail-label">Cash Tag</div>
+                    <div class="detail-value">{$tag}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Amount</div>
+                    <div class="detail-value">${$amount}</div>
+                </div>
+                {if $description}
+                <div class="detail-item">
+                    <div class="detail-label">Description</div>
+                    <div class="detail-value">{$description}</div>
+                </div>
+                {/if}
+            </div>
+
+            <div class="payment-instructions">
+                <div class="instruction-step">
+                    <span class="instruction-number">1</span>
+                    Open Cash App on your mobile device
+                </div>
+                <div class="instruction-step">
+                    <span class="instruction-number">2</span>
+                    Tap the scan icon in the upper left corner
+                </div>
+                <div class="instruction-step">
+                    <span class="instruction-number">3</span>
+                    Scan the QR code above to complete your payment
+                </div>
+            </div>
+            <div class="timer-container">
+                <div>This QR code will expire in:</div>
+                <div class="timer" id="countdown">15:00</div>
+            </div>
+
+            <div id="mobileButtons" style="display: none; margin-top: 30px; text-align: center;">
+                <button id="openAppButton">Open in Cash App</button>
+            </div>
+            {/if}
+        </div>
+    </div>
+
+    <div class="footer">
+        &copy; {$year} Cash App. All rights reserved.
+    </div>
+
+    <script>
+        // 设置倒计时
+        function startCountdown(duration, display) {
+            var timer = duration, minutes, seconds;
+            var countdown = setInterval(function () {
+                minutes = parseInt(timer / 60, 10);
+                seconds = parseInt(timer % 60, 10);
+
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+
+                display.textContent = minutes + ":" + seconds;
+
+                if (--timer < 0) {
+                    clearInterval(countdown);
+                    display.textContent = "Expired";
+                    // 可以在这里添加过期后的处理逻辑
+                }
+            }, 1000);
+        }
+
+        window.onload = function () {
+            // Only start countdown if not cancelled or completed
+            if ("{$status}" !== "cancelled" && "{$status}" !== "completed") {
+                var fifteenMinutes = 60 * 15,
+                    display = document.querySelector('#countdown');
+                startCountdown(fifteenMinutes, display);
+                var device = detectDevice();
+                if (device === "ios") {
+                    document.getElementById('mobileButtons').style.display = 'block';
+                    window.location.href = "{$url}";
+                } else if (device === "android") {
+                    document.getElementById('mobileButtons').style.display = 'block';
+                    window.location.href = "{$androidUrl}";
+                }
+            }
+        };
+
+        function detectDevice() {
+            var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+
+            // iOS 检测
+            if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+                return "ios";
+            }
+
+            // Android 检测
+            if (/android/i.test(userAgent)) {
+                return "android";
+            }
+
+            // 默认为桌面设备
+            return "desktop";
+        }
+    </script>
+</body>
+
+</html>

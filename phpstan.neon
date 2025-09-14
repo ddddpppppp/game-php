@@ -1,0 +1,5 @@
+parameters:
+    excludePaths:
+        - %currentWorkingDirectory%/composer.json
+        - %currentWorkingDirectory%/vendor/
+        - %currentWorkingDirectory%/thinkphp/

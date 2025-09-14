@@ -1,0 +1,43 @@
+{
+    "name": "topthink/think",
+    "description": "the new thinkphp framework",
+    "type": "project",
+    "keywords": [
+        "framework",
+        "thinkphp",
+        "ORM"
+    ],
+    "homepage": "http://thinkphp.cn/",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "liu21st",
+            "email": "liu21st@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.3",
+        "php-http/guzzle6-adapter": "^2.0",
+        "http-interop/http-factory-guzzle": "^1.2",
+        "tekintian/phpqrcode": "^1.0",
+        "bacon/bacon-qr-code": "^2.0",
+        "aliyuncs/oss-sdk-php": "^2.7",
+        "guzzlehttp/guzzle": "^6.5",
+        "webklex/php-imap": "^4.1",
+        "microsoft/microsoft-graph": "^1.110"
+    },
+    "autoload": {
+        "psr-4": {
+            "app\\": "application"
+        },
+        "files": [
+            "application/common/functions/functions.php"
+        ]
+    },
+    "extra": {
+        "think-path": "thinkphp"
+    },
+    "config": {
+        "preferred-install": "dist"
+    }
+}
