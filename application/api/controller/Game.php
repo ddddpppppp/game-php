@@ -58,6 +58,15 @@ class Game extends Controller
         $this->user = $user;
     }
 
+    public function getCanada28GameCurrentDraw()
+    {
+        // 获取当前期数信息
+        $currentDraw = Canada28Draws::getCurrentDraw();
+        return $this->success([
+            'current_draw' => $currentDraw
+        ]);
+    }
+
     /**
      * 获取Canada28游戏数据
      * 包括玩法配置和当前期数信息
@@ -315,11 +324,11 @@ class Game extends Controller
 
             // 参数验证
             if ($betTypeId <= 0) {
-                return $this->error('please select bet type');
+                throw new \Exception('please select bet type');
             }
 
             if ($amount <= 0) {
-                return $this->error('bet amount must be greater than 0');
+                throw new \Exception('bet amount must be greater than 0');
             }
 
             // 获取投注类型配置
@@ -330,29 +339,29 @@ class Game extends Controller
                 ->find();
 
             if (!$betType) {
-                return $this->error('bet type not found or disabled');
+                throw new \Exception('bet type not found or disabled');
             }
 
             // 查找当前可投注的期数（status=0）
             $currentDraw = Canada28Draws::where('status', Canada28Draws::STATUS_WAITING)
                 ->field('id,period_number,status,end_at')
-                ->where('end_at', '>', date('Y-m-d H:i:s'))
+                ->where('end_at', '>', date('Y-m-d H:i:s', time() + 30))
                 ->order('period_number desc')
                 ->find();
 
             if (!$currentDraw) {
-                return $this->error('no available bet period');
+                throw new \Exception('no available bet period');
             }
 
-            // 检查是否在开奖前1秒内（锁定投注）
-            $lockTime = strtotime($currentDraw['end_at']) - 1; // 开奖前1秒
+            // 检查是否在开奖前30秒内（锁定投注）
+            $lockTime = strtotime($currentDraw['end_at']) - 30; // 开奖前30秒
             if (time() >= $lockTime) {
-                return $this->error('betting is locked, draw will start soon');
+                throw new \Exception('betting is closed 30 seconds before the draw');
             }
 
             // 检查用户余额
             if ($this->user['balance'] < $amount) {
-                return $this->error('insufficient balance');
+                throw new \Exception('insufficient balance');
             }
 
             Db::startTrans();

@@ -450,16 +450,15 @@ class User extends Controller
             $changeAmount = $todayChanges;
             $changePercent = $yesterdayEndBalance > 0 ?
                 round(($changeAmount / $yesterdayEndBalance) * 100, 2) : 0;
-
-            return $this->success([
-                'today_change' => floatval($changeAmount),
-                'today_change_percent' => floatval($changePercent),
-                'yesterday_balance' => floatval($yesterdayEndBalance),
-                'today_balance' => floatval($todayBalance)
-            ]);
         } catch (\Exception $e) {
             return $this->error('Failed to get daily change: ' . $e->getMessage());
         }
+        return $this->success([
+            'today_change' => floatval($changeAmount),
+            'today_change_percent' => floatval($changePercent),
+            'yesterday_balance' => floatval($yesterdayEndBalance),
+            'today_balance' => floatval($todayBalance)
+        ]);
     }
 
     /**

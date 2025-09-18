@@ -71,12 +71,12 @@ class Canada28Draws extends BaseModel
     public static function getStatusText($status)
     {
         $statusMap = [
-            self::STATUS_WAITING => '等待开奖',
-            self::STATUS_DRAWING => '开奖中',
-            self::STATUS_DRAWN => '已开奖',
-            self::STATUS_SETTLED => '已结算',
+            self::STATUS_WAITING => 'Waiting',
+            self::STATUS_DRAWING => 'Drawing',
+            self::STATUS_DRAWN => 'Drawn',
+            self::STATUS_SETTLED => 'Settled',
         ];
-        return $statusMap[$status] ?? '未知状态';
+        return $statusMap[$status] ?? 'Unknown Status';
     }
 
     /**
