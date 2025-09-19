@@ -35,10 +35,10 @@ class Game extends Controller
     public function initialize()
     {
         $this->params = request()->param();
-        if (in_array(request()->action(), ['getcanada28game', 'getcanada28messages', 'getcanada28gamecurrentdraw'])) {
+        $token = request()->header('Authorization') ?: request()->header('Token');
+        if (in_array(request()->action(), ['getcanada28game', 'getcanada28messages', 'getcanada28gamecurrentdraw', 'getcanada28drawhistory', 'getcanada28bethistory', 'placecanada28bet']) && empty($token)) {
             return;
         }
-        $token = request()->header('Authorization') ?: request()->header('Token');
         if (empty($token)) {
             return $this->error('Token required', 401);
         }
@@ -244,7 +244,6 @@ class Game extends Controller
 
             // 获取用户的投注记录
             $bets = Canada28Bets::where('user_id', $this->user['uuid'])
-                ->where('merchant_id', $this->user['merchant_id'])
                 ->order('created_at desc')
                 ->limit($offset, $limit)
                 ->select()
