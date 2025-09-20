@@ -173,15 +173,17 @@ class Game extends Controller
 
                 $messageArray[] = $messageData;
             }
-            $messageArray[] = [
-                'id' => '',
-                'nickname' => 'Bot',
-                'avatar' => '',
-                'user_id' => 'bot',
-                'type' => 'text',
-                'message' => 'Welcome to Keno! New users will receive a free $20 upon sign up, with a maximum win of 500x bonus!',
-                'created_at' => date('Y-m-d H:i:s')
-            ];
+            if (empty($this->user)) {
+                $messageArray[] = [
+                    'id' => '',
+                    'nickname' => 'Bot',
+                    'avatar' => '',
+                    'user_id' => 'bot',
+                    'type' => 'text',
+                    'message' => 'Welcome to Keno! New users will receive a free $20 upon sign up, with a maximum win of 500x bonus!',
+                    'created_at' => date('Y-m-d H:i:s')
+                ];
+            }
         } catch (\Exception $e) {
             return $this->error('fetch messages error: ' . $e->getMessage(), 500);
         }

@@ -8,6 +8,7 @@ use app\api\service\Usdt;
 use app\api\service\User as ServiceUser;
 use app\common\controller\Controller;
 use app\common\helper\MicrosoftGraph;
+use app\common\helper\ServerHelper;
 use app\common\helper\TimeHelper;
 use app\common\model\PaymentChannel;
 use app\common\model\Users;
@@ -517,7 +518,7 @@ class User extends Controller
             return $this->error('Deposit amount must be greater than 0');
         }
 
-        if (!in_array($method, ['cashapp', 'usdt'])) {
+        if (!in_array($method, ['cashapp', 'usdt', 'usdc'])) {
             return $this->error('Invalid payment method');
         }
 
@@ -589,7 +590,7 @@ class User extends Controller
                 'amount' => $amount,
                 'expired_at' => $transaction->expired_at
             ]);
-        } else {
+        } else if ($method === 'usdt') {
             // USDT 支付 - 从payment_channel获取地址
             $channel = PaymentChannel::where('type', 'usdt')
                 ->where('status', 1)
@@ -622,6 +623,46 @@ class User extends Controller
                 'method' => 'usdt',
                 'amount' => $amount,
                 'usdt_amount' => $usdtAmount,
+                'expired_at' => $transaction->expired_at
+            ]);
+        } else if ($method === 'usdc') {
+            // USDC 支付 - 从payment_channel获取地址
+            $channel = PaymentChannel::where('type', 'usdc')
+                ->where('status', 1)
+                ->find();
+
+            if (!$channel) {
+                return $this->error('USDC payment channel not available');
+            }
+
+            $freePayHelper = new \app\common\helper\FreePay($channel->params);
+            list($code, $message, $payData) = $freePayHelper->freePayOrder($orderNo, $amount * 100, url('/api/notify/successCommonReturn', [], false, true), ServerHelper::getServerIp());
+
+            if ($code !== 1) {
+                Db::rollback();
+                return $this->error($message);
+            }
+            $transaction = new Transactions();
+            $transaction->user_id = $this->user->id;
+            $transaction->type = 'deposit';
+            $transaction->channel_id = $channel->id;
+            $transaction->amount = $amount;
+            $transaction->actual_amount = $amount;
+            $transaction->account = $channel->params['address'];
+            $transaction->order_no = $orderNo;
+            $transaction->fee = 0;
+            $transaction->gift = $rechargeConfig['usdt_gift_rate'] ? $amount * $rechargeConfig['usdt_gift_rate'] / 100 : 0;
+            $transaction->status = 'pending';
+            $transaction->expired_at = date('Y-m-d H:i:s', strtotime('+30 minutes'));
+            $transaction->save();
+
+            return $this->success([
+                'transaction_id' => $transaction->id,
+                'order_no' => $orderNo,
+                'deposit_address' => $channel->params['address'],
+                'method' => 'usdc',
+                'amount' => $amount,
+                'payment_url' => $payData,
                 'expired_at' => $transaction->expired_at
             ]);
         }
