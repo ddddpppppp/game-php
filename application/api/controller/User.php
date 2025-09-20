@@ -18,6 +18,7 @@ use app\common\model\Transactions;
 use app\common\service\Email;
 use app\common\service\UserBalance;
 use app\shop\enum\Admin;
+use app\shop\model\SystemSetting;
 use think\Db;
 use think\facade\Cache;
 use think\facade\Log;
@@ -125,7 +126,9 @@ class User extends Controller
         $password = trim($this->params['password']);
         $name = trim($this->params['name']);
         $code = trim($this->params['code']);
+        $deviceCode = trim($this->params['device_code'] ?? '');
         $parentId = isset($this->params['parent_id']) ? (int)$this->params['parent_id'] : '';
+        $userIp = request()->ip();
 
         if (empty($email) || empty($password) || empty($name) || empty($code)) {
             return $this->error('All fields are required');
@@ -168,7 +171,15 @@ class User extends Controller
             $user->status = 1;
             $user->salt = $salt;
             $user->avatar = '';
+            $user->ip = $userIp;
+            $user->device_code = $deviceCode;
             $user->save();
+
+            $systemConfig = SystemSetting::where('name', 'new_user_gift')->field('config')->find();
+            if ($systemConfig) {
+                $gift = $systemConfig->config['gift_amount'];
+                UserBalance::addUserBalance($user->id, $gift, 'gift', "Bonus for new user, gift amount: {$gift}", $user->id);
+            }
 
             // Clear verification code
             Cache::rm($cacheKey);
@@ -232,6 +243,7 @@ class User extends Controller
                 'email' => $user->username,
                 'name' => $user->nickname,
                 'avatar' => $user->avatar ?: '',
+                'balance' => floatval(number_format($user->balance, 2, '.', '')),
             ]
         ]);
     }

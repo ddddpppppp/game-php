@@ -61,6 +61,8 @@ class User extends Controller
             $nickname = $this->params['nickname'] ?? '';
             $status = $this->params['status'] ?? '';
             $parent_id = $this->params['parent_id'] ?? '';
+            $ip = $this->params['ip'] ?? '';
+            $device_code = $this->params['device_code'] ?? '';
 
             $where = [];
             if (!empty($username)) {
@@ -75,11 +77,17 @@ class User extends Controller
             if (!empty($parent_id)) {
                 $where[] = ['parent_id', '=', $parent_id];
             }
+            if (!empty($ip)) {
+                $where[] = ['ip', '=', $ip];
+            }
+            if (!empty($device_code)) {
+                $where[] = ['device_code', '=', $device_code];
+            }
 
             $model = new \app\common\model\Users();
             $total = $model->where($where)->count();
             $list = $model->where($where)
-                ->field('id,username,nickname,avatar,parent_id,status,created_at,updated_at')
+                ->field('id,username,nickname,avatar,parent_id,status,created_at,updated_at,ip,device_code')
                 ->order('id desc')
                 ->page($page, $size)
                 ->select()
@@ -87,6 +95,15 @@ class User extends Controller
         } catch (\Exception $e) {
             return $this->error('获取失败：' . $e->getMessage());
         }
+        $ipTimes = \app\common\model\Users::where('ip', 'in', array_column($list, 'ip'))->field('ip,count(*) as count')->group('ip')->select()->toArray();
+        $ipTimes = ArrayHelper::setKey($ipTimes, 'ip');
+        $deviceCodeTimes = \app\common\model\Users::where('device_code', 'in', array_column($list, 'device_code'))->field('device_code,count(*) as count')->group('device_code')->select()->toArray();
+        $deviceCodeTimes = ArrayHelper::setKey($deviceCodeTimes, 'device_code');
+        foreach ($list as &$item) {
+            $item['ip_times'] = $ipTimes[$item['ip']]['count'] ?? 0;
+            $item['device_code_times'] = $deviceCodeTimes[$item['device_code']]['count'] ?? 0;
+        }
+        unset($item);
 
         return $this->success([
             'list' => $list,

@@ -15,6 +15,9 @@ use app\common\model\BaseModel;
  * @property string $avatar 头像URL
  * @property integer $parent_id 邀请人ID
  * @property integer $status 状态 (1:正常, 0:禁用)
+ * @property string $salt 密码盐值
+ * @property string $ip IP地址
+ * @property string $device_code 设备码
  * @property \DateTime $created_at 创建时间
  * @property \DateTime $updated_at 更新时间
  * @property \DateTime $deleted_at 删除时间

@@ -195,7 +195,8 @@ class Usdt
             $deposit->save();
 
             // 增加用户余额
-            ServiceUserBalance::addUserBalance($deposit->user_id, $deposit->amount + $deposit->gift, 'deposit', "USDT recharge received, gift amount: {$deposit->gift}", $deposit->id);
+            ServiceUserBalance::addUserBalance($deposit->user_id, $deposit->amount, 'deposit', "USDT recharge received, amount: {$deposit->amount}", $deposit->id);
+            ServiceUserBalance::addUserBalance($deposit->user_id, $deposit->gift, 'gift', "USDT recharge received, gift amount: {$deposit->gift}", $deposit->id);
             Db::commit();
             Log::info("充值成功: 用户ID={$deposit->user_id}, 订单号={$deposit->order_no}, 金额={$deposit->amount}");
             return [1, '充值成功'];

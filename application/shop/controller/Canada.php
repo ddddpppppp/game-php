@@ -393,7 +393,7 @@ class Canada extends Controller
 
 
     /**
-     * 获取仪表盘统计数据
+     * 获取仪表盘统计概览数据
      */
     public function getDashboardStats()
     {
@@ -401,7 +401,6 @@ class Canada extends Controller
             // 获取搜索参数
             $startDate = $this->params['startDate'] ?? date('Y-m-d', strtotime('-6 days'));
             $endDate = $this->params['endDate'] ?? date('Y-m-d');
-            $period = $this->params['period'] ?? 'day';
 
             // 将本地时间转换为UTC时间用于数据库查询
             $startDateUTC = TimeHelper::convertToUTC($startDate . ' 00:00:00');
@@ -422,25 +421,46 @@ class Canada extends Controller
 
             // 3. 计算趋势
             $trends = $this->calculateTrends($currentStats, $prevStats);
-
-            // 4. 获取图表数据
-            $chartData = $this->getChartData($startDateUTC, $endDateUTC, $period);
         } catch (\Exception $e) {
             return $this->error('获取失败：' . $e->getMessage());
         }
         return $this->success([
-            'personal' => [
-                'depositAmount' => $currentStats['depositAmount'],
-                'depositAmountTrend' => $trends['depositAmount'],
-                'withdrawAmount' => $currentStats['withdrawAmount'],
-                'withdrawAmountTrend' => $trends['withdrawAmount'],
-                'betAmount' => $currentStats['betAmount'],
-                'betAmountTrend' => $trends['betAmount'],
-                'platformProfit' => $currentStats['platformProfit'],
-                'platformProfitTrend' => $trends['platformProfit'],
-            ],
-            'chart' => $chartData
+            'depositAmount' => $currentStats['depositAmount'],
+            'depositAmountTrend' => $trends['depositAmount'],
+            'withdrawAmount' => $currentStats['withdrawAmount'],
+            'withdrawAmountTrend' => $trends['withdrawAmount'],
+            'depositChannelFee' => $currentStats['depositChannelFee'],
+            'depositChannelFeeTrend' => $trends['depositChannelFee'],
+            'withdrawFee' => $currentStats['withdrawFee'],
+            'withdrawFeeTrend' => $trends['withdrawFee'],
+            'grossProfit' => $currentStats['grossProfit'],
+            'grossProfitTrend' => $trends['grossProfit'],
+            'realProfit' => $currentStats['realProfit'],
+            'realProfitTrend' => $trends['realProfit'],
         ]);
+    }
+
+    /**
+     * 获取图表数据
+     */
+    public function getChartData()
+    {
+        try {
+            // 获取搜索参数
+            $startDate = $this->params['startDate'] ?? date('Y-m-d', strtotime('-6 days'));
+            $endDate = $this->params['endDate'] ?? date('Y-m-d');
+            $period = $this->params['period'] ?? 'day';
+
+            // 将本地时间转换为UTC时间用于数据库查询
+            $startDateUTC = TimeHelper::convertToUTC($startDate . ' 00:00:00');
+            $endDateUTC = TimeHelper::convertToUTC($endDate . ' 23:59:59');
+
+            // 获取图表数据
+            $chartData = $this->getSimpleChartData($startDateUTC, $endDateUTC, $period);
+        } catch (\Exception $e) {
+            return $this->error('获取失败：' . $e->getMessage());
+        }
+        return $this->success($chartData);
     }
 
     /**
@@ -448,19 +468,21 @@ class Canada extends Controller
      */
     private function getStatsForPeriod($startDate, $endDate)
     {
-        // 充值统计
+        // 充值统计（包含通道费计算）
         $depositStats = \think\Db::table('game_transactions')
-            ->where('type', 'deposit')
-            ->where('status', 'completed')
-            ->where('created_at', 'between', [$startDate, $endDate])
-            ->where('deleted_at', null)
+            ->alias('t')
+            ->leftJoin('game_payment_channel c', 't.channel_id = c.id')
+            ->where('t.type', 'deposit')
+            ->where('t.status', 'completed')
+            ->where('t.created_at', 'between', [$startDate, $endDate])
+            ->where('t.deleted_at', null)
             ->field([
-                'SUM(amount) as total_amount',
-                'COUNT(*) as total_count'
+                'SUM(t.amount) as total_amount',
+                'COUNT(*) as total_count',
+                'SUM(t.amount * (c.rate / 100) + c.charge_fee) as total_channel_fee'
             ])
             ->find();
-
-        // 提现统计
+        // 提现统计（包含手续费）
         $withdrawStats = \think\Db::table('game_transactions')
             ->where('type', 'withdraw')
             ->where('status', 'completed')
@@ -468,36 +490,32 @@ class Canada extends Controller
             ->where('deleted_at', null)
             ->field([
                 'SUM(amount) as total_amount',
+                'SUM(fee) as total_fee',
                 'COUNT(*) as total_count'
             ])
             ->find();
 
-        // 投注统计
-        $betStats = \think\Db::table('game_canada28_bets')
-            ->alias('b')
-            ->leftJoin('game_users u', 'b.user_id = u.uuid')
-            ->where('b.created_at', 'between', [$startDate, $endDate])
-            ->where('b.deleted_at', null)
-            ->field([
-                'SUM(b.amount) as total_bet_amount',
-                'COUNT(b.id) as total_bet_count',
-                'SUM(CASE WHEN b.status = "win" THEN b.amount * b.multiplier - b.amount ELSE 0 END) as total_user_profit',
-                'COUNT(DISTINCT b.user_id) as unique_users'
-            ])
-            ->find();
 
-        // 计算平台盈利 = 投注金额 - 用户盈利
-        $platformProfit = ($betStats['total_bet_amount'] ?? 0) - ($betStats['total_user_profit'] ?? 0);
+        $depositAmount = floatval($depositStats['total_amount'] ?? 0);
+        $withdrawAmount = floatval($withdrawStats['total_amount'] ?? 0);
+        $depositChannelFee = floatval($depositStats['total_channel_fee'] ?? 0);
+        $withdrawFee = floatval($withdrawStats['total_fee'] ?? 0);
+
+        // 毛利润 = 充值金额 - 提现金额 + 手续费
+        $grossProfit = $depositAmount - $withdrawAmount + $withdrawFee;
+
+        // 实际利润 = 充值金额 - 提现金额 + 手续费 - 充值通道费
+        $realProfit = $depositAmount - $withdrawAmount + $withdrawFee - $depositChannelFee;
 
         return [
-            'depositAmount' => floatval($depositStats['total_amount'] ?? 0),
+            'depositAmount' => $depositAmount,
             'depositCount' => intval($depositStats['total_count'] ?? 0),
-            'withdrawAmount' => floatval($withdrawStats['total_amount'] ?? 0),
+            'withdrawAmount' => $withdrawAmount,
             'withdrawCount' => intval($withdrawStats['total_count'] ?? 0),
-            'betAmount' => floatval($betStats['total_bet_amount'] ?? 0),
-            'betCount' => intval($betStats['total_bet_count'] ?? 0),
-            'platformProfit' => $platformProfit,
-            'uniqueUsers' => intval($betStats['unique_users'] ?? 0),
+            'depositChannelFee' => $depositChannelFee,
+            'withdrawFee' => $withdrawFee,
+            'grossProfit' => $grossProfit,
+            'realProfit' => $realProfit,
         ];
     }
 
@@ -507,7 +525,7 @@ class Canada extends Controller
     private function calculateTrends($current, $prev)
     {
         $trends = [];
-        $fields = ['depositAmount', 'withdrawAmount', 'betAmount', 'platformProfit'];
+        $fields = ['depositAmount', 'withdrawAmount', 'depositChannelFee', 'withdrawFee', 'grossProfit', 'realProfit'];
 
         foreach ($fields as $field) {
             $currentValue = $current[$field] ?? 0;
@@ -531,9 +549,9 @@ class Canada extends Controller
     }
 
     /**
-     * 获取图表数据
+     * 获取简化的图表数据（仅充值和提现）
      */
-    private function getChartData($startDate, $endDate, $period)
+    private function getSimpleChartData($startDate, $endDate, $period)
     {
         // 根据周期设置日期格式和分组
         switch ($period) {
@@ -578,19 +596,6 @@ class Canada extends Controller
             ->order('date_group ASC')
             ->select();
 
-        // 投注数据
-        $betData = \think\Db::table('game_canada28_bets')
-            ->field([
-                $dateField . ' as date_group',
-                'SUM(amount) as bet_amount',
-                'SUM(CASE WHEN status = "win" THEN amount * multiplier - amount ELSE 0 END) as user_profit'
-            ])
-            ->where('created_at', 'between', [$startDate, $endDate])
-            ->where('deleted_at', null)
-            ->group('date_group')
-            ->order('date_group ASC')
-            ->select();
-
         // 生成完整的日期点
         $datePoints = $this->generateDatePoints($startDate, $endDate, $period);
 
@@ -598,8 +603,6 @@ class Canada extends Controller
         $labels = [];
         $depositAmountData = [];
         $withdrawAmountData = [];
-        $betAmountData = [];
-        $platformProfitData = [];
 
         // 将数据转换为以日期为key的数组便于查找
         $depositMap = [];
@@ -612,30 +615,16 @@ class Canada extends Controller
             $withdrawMap[$item['date_group']] = $item['amount'];
         }
 
-        $betMap = [];
-        foreach ($betData as $item) {
-            $betMap[$item['date_group']] = [
-                'bet_amount' => $item['bet_amount'],
-                'user_profit' => $item['user_profit']
-            ];
-        }
-
         foreach ($datePoints as $dateKey => $label) {
             $labels[] = $label;
             $depositAmountData[] = floatval($depositMap[$dateKey] ?? 0);
             $withdrawAmountData[] = floatval($withdrawMap[$dateKey] ?? 0);
-
-            $betInfo = $betMap[$dateKey] ?? ['bet_amount' => 0, 'user_profit' => 0];
-            $betAmountData[] = floatval($betInfo['bet_amount']);
-            $platformProfitData[] = floatval($betInfo['bet_amount']) - floatval($betInfo['user_profit']);
         }
 
         return [
             'labels' => $labels,
             'depositData' => $depositAmountData,
             'withdrawData' => $withdrawAmountData,
-            'betData' => $betAmountData,
-            'profitData' => $platformProfitData,
         ];
     }
 

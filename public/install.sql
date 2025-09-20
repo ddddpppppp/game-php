@@ -140,6 +140,8 @@ CREATE TABLE
         `parent_id` int (36) DEFAULT 0 COMMENT '邀请人ID',
         `status` tinyint (1) NOT NULL DEFAULT 1 COMMENT '状态 (1:正常, 0:禁用)',
         `salt` varchar(32) DEFAULT NULL COMMENT '密码盐值',
+        `ip` varchar(50) DEFAULT NULL COMMENT 'ip',
+        `device_code` varchar(32) DEFAULT NULL COMMENT '设备码',
         `created_at` datetime DEFAULT null,
         `updated_at` datetime DEFAULT null,
         `deleted_at` datetime DEFAULT null,
@@ -147,6 +149,8 @@ CREATE TABLE
         UNIQUE KEY `username` (`username`),
         KEY `parent_id` (`parent_id`),
         KEY `merchant_id` (`merchant_id`),
+        KEY `ip` (`ip`),
+        KEY `device_code` (`device_code`),
         KEY `status` (`status`)
     ) ENGINE = InnoDB DEFAULT CHARSET = utf8 AUTO_INCREMENT = 1 COMMENT '用户表';
 
@@ -181,7 +185,7 @@ CREATE TABLE IF NOT EXISTS `game_transactions` (
 CREATE TABLE IF NOT EXISTS `game_user_balances` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
   `user_id` bigint(20) unsigned NOT NULL COMMENT '用户ID',
-  `type` varchar(20) NOT NULL COMMENT '变动类型：deposit-充值, withdraw-提现, game_bet-投注, game_win-收益',
+  `type` varchar(20) NOT NULL COMMENT '变动类型：gift-赠送, deposit-充值, withdraw-提现, game_bet-投注, game_win-收益',
   `amount` decimal(15,2) NOT NULL COMMENT '变动金额',
   `balance_before` decimal(15,4) NOT NULL COMMENT '变动前余额',
   `balance_after` decimal(15,4) NOT NULL COMMENT '变动后余额',
