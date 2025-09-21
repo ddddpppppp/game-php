@@ -307,6 +307,28 @@ INSERT INTO `game_canada28_bet_types` (`merchant_id`, `type_name`, `type_key`, `
 ('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 26', 'sum_26', '特码26', 100.00, 1, 40, NOW(), NOW()),
 ('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 27', 'sum_27', '特码27', 500.00, 1, 41, NOW(), NOW());
 
+-- 动态赔率规则表 - 根据特殊条件调整赔率
+-- DROP TABLE IF EXISTS `game_canada28_dynamic_odds`;
+CREATE TABLE IF NOT EXISTS `game_canada28_dynamic_odds` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `merchant_id` char(36) NOT NULL COMMENT '商户ID',
+    `rule_name` varchar(100) NOT NULL COMMENT '规则名称',
+    `trigger_condition` varchar(50) NOT NULL COMMENT '触发条件：sum_range, sum_exact, sum_in',
+    `trigger_values` text COMMENT '触发条件值（JSON格式）',
+    `bet_type_adjustments` text COMMENT '投注类型赔率调整（JSON格式）',
+    `status` tinyint(2) DEFAULT 1 COMMENT '状态：1启用，0禁用',
+    `priority` int(11) DEFAULT 0 COMMENT '优先级',
+    `created_at` datetime,
+    `updated_at` datetime,
+    PRIMARY KEY (`id`),
+    KEY `merchant_id` (`merchant_id`),
+    KEY `status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='动态赔率规则表';
+
+-- 插入13-14特殊赔率规则
+INSERT INTO `game_canada28_dynamic_odds` (`merchant_id`, `rule_name`, `trigger_condition`, `trigger_values`, `bet_type_adjustments`, `status`, `priority`, `created_at`, `updated_at`) VALUES
+('ad22ab51-1637-42c5-a82f-4b51382f7bc3', '13-14特殊赔率', 'sum_in', '[13, 14]', '{"high": 1.6, "low": 1.6, "odd": 1.6, "even": 1.6, "high_odd": 1.0, "low_odd": 1.0, "high_even": 1.0, "low_even": 1.0}', 1, 100, NOW(), NOW());
+
 -- 游戏期数表 - 记录每期游戏的状态和结果
 -- DROP TABLE IF EXISTS `game_canada28_draws`;
 CREATE TABLE `game_canada28_draws` (

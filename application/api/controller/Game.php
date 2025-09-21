@@ -112,12 +112,34 @@ class Game extends Controller
                 'result_sum' => $currentDraw['result_sum'],
                 'time_left' => max(0, strtotime($currentDraw['end_at']) - time()) // 剩余秒数
             ];
+
+            // 获取动态赔率规则
+            $dynamicOddsRules = Db::table('game_canada28_dynamic_odds')
+                ->where('merchant_id', $this->user['merchant_id'])
+                ->where('status', 1)
+                ->order('priority desc')
+                ->select();
+
+            // 转换动态赔率规则为数组格式
+            $dynamicOddsArray = [];
+            foreach ($dynamicOddsRules as $rule) {
+                $dynamicOddsArray[] = [
+                    'id' => $rule['id'],
+                    'rule_name' => $rule['rule_name'],
+                    'trigger_condition' => $rule['trigger_condition'],
+                    'trigger_values' => json_decode($rule['trigger_values'], true),
+                    'bet_type_adjustments' => json_decode($rule['bet_type_adjustments'], true),
+                    'status' => intval($rule['status']),
+                    'priority' => intval($rule['priority'])
+                ];
+            }
         } catch (\Exception $e) {
             return $this->error('fetch game data error: ' . $e->getMessage(), 500);
         }
         return $this->success([
             'bet_types' => $betTypesArray,
-            'current_draw' => $drawData
+            'current_draw' => $drawData,
+            'dynamic_odds_rules' => $dynamicOddsArray
         ]);
     }
 
