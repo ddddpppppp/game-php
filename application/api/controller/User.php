@@ -530,7 +530,7 @@ class User extends Controller
             return $this->error('Deposit amount must be greater than 0');
         }
 
-        if (!in_array($method, ['cashapp', 'usdt', 'usdc'])) {
+        if (!in_array($method, ['cashapp', 'usdt', 'usdc_online'])) {
             return $this->error('Invalid payment method');
         }
 
@@ -637,9 +637,9 @@ class User extends Controller
                 'usdt_amount' => $usdtAmount,
                 'expired_at' => $transaction->expired_at
             ]);
-        } else if ($method === 'usdc') {
+        } else if ($method === 'usdc_online') {
             // USDC 支付 - 从payment_channel获取地址
-            $channel = PaymentChannel::where('type', 'usdc')
+            $channel = PaymentChannel::where('type', 'usdc_online')
                 ->where('status', 1)
                 ->find();
 

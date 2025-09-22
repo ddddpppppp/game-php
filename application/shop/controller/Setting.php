@@ -806,6 +806,7 @@ class Setting extends Controller
                     'min_amount' => floatval($config['min_amount'] ?? 0),
                     'max_amount' => floatval($config['max_amount'] ?? 0),
                     'usdt_gift_rate' => floatval($config['usdt_gift_rate'] ?? 0),
+                    'usdc_online_gift_rate' => floatval($config['usdc_online_gift_rate'] ?? 0),
                     'cashapp_gift_rate' => floatval($config['cashapp_gift_rate'] ?? 0),
                 ];
 
@@ -815,8 +816,10 @@ class Setting extends Controller
                     'min_amount' => floatval($config['min_amount'] ?? 0),
                     'max_amount' => floatval($config['max_amount'] ?? 0),
                     'usdt_fee_rate' => floatval($config['usdt_fee_rate'] ?? 0),
+                    'usdc_fee_rate' => floatval($config['usdc_fee_rate'] ?? 0),
                     'cashapp_fee_rate' => floatval($config['cashapp_fee_rate'] ?? 0),
                     'daily_limit' => intval($config['daily_limit'] ?? 0),
+                    'gift_transaction_times' => intval($config['gift_transaction_times'] ?? 0),
                 ];
 
             default:

@@ -121,8 +121,8 @@ CREATE TABLE IF NOT EXISTS `game_system_setting` (
 
 -- 插入默认系统设置数据
 INSERT INTO `game_system_setting` (`name`, `title`, `description`, `config`, `status`, `sort`, `created_at`, `updated_at`) VALUES
-('recharge_setting', '充值设置', '配置充值相关参数', '{"min_amount":10,"max_amount":10000,"usdt_gift_rate":2,"cashapp_gift_rate":0}', 1, 1, NOW(), NOW()),
-('withdraw_setting', '提现设置', '配置提现相关参数', '{"min_amount":50,"max_amount":50000,"usdt_fee_rate":2, "cashapp_fee_rate":0, "daily_limit":3}', 1, 4, NOW(), NOW());
+('recharge_setting', '充值设置', '配置充值相关参数', '{"min_amount":10,"max_amount":10000,"usdt_gift_rate":2,"cashapp_gift_rate":0, "usdc_online_gift_rate":2}', 1, 1, NOW(), NOW()),
+('withdraw_setting', '提现设置', '配置提现相关参数', '{"min_amount":50,"max_amount":50000,"usdt_fee_rate":2, "cashapp_fee_rate":0, "usdc_fee_rate":0, "daily_limit":3, "gift_transaction_times": 3}', 1, 4, NOW(), NOW());
 
 -- DROP TABLE IF EXISTS `game_users`;
 CREATE TABLE

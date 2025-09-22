@@ -412,6 +412,6 @@ class FreePay
         $payId = $data['platOrderNo'] ?? '';
         $payUrl = $data['payData'] ?? '';
 
-        return [$payUrl, $payId, null];
+        return [1, $payId, $payUrl];
     }
 }
