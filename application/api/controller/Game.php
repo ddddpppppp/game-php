@@ -76,6 +76,7 @@ class Game extends Controller
         try {
             // 获取所有玩法配置
             $betTypes = Canada28BetTypes::where('merchant_id', $this->user['merchant_id'])
+                ->order("sort asc")
                 ->select();
 
             // 转换为数组格式并按分类分组
