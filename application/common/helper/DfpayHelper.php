@@ -50,7 +50,7 @@ class DfpayHelper
             return [-1, 'token获取失败', null];
         }
         $clientIp = $clientIp ?: ServerHelper::getServerIp();
-        $notifyUrl = url('/api/notify/Web3', [], false, true);
+        $notifyUrl = url('/api/notify/dfpayNotify', [], false, true);
         $returnUrl = $returnUrl ?: url('/api/notify/successCommonReturn', [], false, true);
         $url = 'https://cash.Web3.net/pay/create_order';
         $param = [

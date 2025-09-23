@@ -3,6 +3,7 @@
 namespace app\api\service;
 
 use app\common\model\Users;
+use think\Db;
 
 class User
 {

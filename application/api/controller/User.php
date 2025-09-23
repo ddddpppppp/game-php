@@ -19,6 +19,7 @@ use app\common\service\Email;
 use app\common\service\UserBalance;
 use app\shop\enum\Admin;
 use app\shop\model\SystemSetting;
+use app\common\helper\EmailServer;
 use think\Db;
 use think\facade\Cache;
 use think\facade\Log;
@@ -87,7 +88,7 @@ class User extends Controller
         // Check rate limiting (1 code per minute)
         $rateLimitKey = sprintf(EnumUser::EMAIL_RATE_LIMIT_KEY, $email);
         if (Cache::get($rateLimitKey)) {
-            return $this->error('Please wait before requesting another code');
+            // return $this->error('Please wait before re   questing another code');
         }
 
         // Generate 6-digit verification code
@@ -100,17 +101,25 @@ class User extends Controller
         // Set rate limiting for 60 seconds
         Cache::set($rateLimitKey, true, 60);
 
-        // Send email (simplified for demo - replace with actual email service)
+        // Send verification code email
         try {
-            $subject = $type === 'register' ? 'Registration Verification Code' : 'Password Reset Verification Code';
-            $message = ServiceUser::getEmailTemplate($code, $type);
+            // Load email configuration from config file
+            $emailConfig = [
+                'smtp_host'     => config('email.smtp_host'),
+                'smtp_port'     => config('email.smtp_port'),
+                'smtp_username' => config('email.smtp_username'),
+                'smtp_password' => config('email.smtp_password'),
+                'smtp_secure'   => config('email.smtp_secure'),
+                'from_name'     => config('email.from_name'),
+            ];
+            $emailServer = new EmailServer($emailConfig);
+            $result = $emailServer->sendVerificationCode($email, $code, $type);
 
-            $microsoftGraph = new MicrosoftGraph(getenv('MICROSOFT_MAIN_CLIENT_ID'), getenv('MICROSOFT_MAIN_CLIENT_SECRET'), getenv('MICROSOFT_MAIN_TENANT_ID'));
-            list($code, $message) = $microsoftGraph->sendEmail(getenv('MICROSOFT_MAIN_EMAIL'), $email, $subject, $message);
-            Log::info("Email verification code for {$email}: {$code}");
-            if ($code !== 1) {
-                throw new \Exception($message);
+            if (!$result) {
+                throw new \Exception($emailServer->getError());
             }
+
+            Log::info("Verification code sent to {$email}: {$code}");
         } catch (\Exception $e) {
             return $this->error('Failed to send verification code: ' . $e->getMessage());
         }
@@ -660,10 +669,10 @@ class User extends Controller
             $transaction->channel_id = $channel->id;
             $transaction->amount = $amount;
             $transaction->actual_amount = $amount;
-            $transaction->account = $channel->params['address'];
+            $transaction->account = '';
             $transaction->order_no = $orderNo;
             $transaction->fee = 0;
-            $transaction->gift = $rechargeConfig['usdt_gift_rate'] ? $amount * $rechargeConfig['usdt_gift_rate'] / 100 : 0;
+            $transaction->gift = $rechargeConfig['usdt_online_gift_rate'] ? $amount * $rechargeConfig['usdt_online_gift_rate'] / 100 : 0;
             $transaction->status = 'pending';
             $transaction->expired_at = date('Y-m-d H:i:s', strtotime('+30 minutes'));
             $transaction->save();
@@ -733,7 +742,7 @@ class User extends Controller
             return $this->error('Withdraw amount must be greater than 0');
         }
 
-        if (!in_array($method, ['cashapp', 'usdt'])) {
+        if (!in_array($method, ['cashapp', 'usdt', 'usdc'])) {
             return $this->error('Invalid withdraw method');
         }
 

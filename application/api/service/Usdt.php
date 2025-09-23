@@ -76,7 +76,7 @@ class Usdt
             list($found, $txHash, $actualAmount) = self::checkUsdtTransaction($receivingAddress, $deposit->usdt_amount, 1800);
 
             if ($found) {
-                return self::completeDeposit($deposit);
+                return ServiceUserBalance::completeDeposit($deposit);
             }
 
             return [0, '等待支付确认'];
@@ -179,31 +179,5 @@ class Usdt
         }
 
         return $data;
-    }
-
-    /**
-     * 完成充值
-     */
-    private static function completeDeposit($deposit)
-    {
-        try {
-            Db::startTrans();
-
-            // 更新充值状态
-            $deposit->status = 'completed';
-            $deposit->completed_at = date('Y-m-d H:i:s');
-            $deposit->save();
-
-            // 增加用户余额
-            ServiceUserBalance::addUserBalance($deposit->user_id, $deposit->amount, 'deposit', "USDT recharge received, amount: {$deposit->amount}", $deposit->id);
-            ServiceUserBalance::addUserBalance($deposit->user_id, $deposit->gift, 'gift', "USDT recharge received, gift amount: {$deposit->gift}", $deposit->id);
-            Db::commit();
-            Log::info("充值成功: 用户ID={$deposit->user_id}, 订单号={$deposit->order_no}, 金额={$deposit->amount}");
-            return [1, '充值成功'];
-        } catch (\Exception $e) {
-            Db::rollback();
-            Log::error('完成充值失败: ' . $e->getMessage());
-            return [0, '充值处理失败: ' . $e->getMessage()];
-        }
     }
 }

@@ -390,8 +390,6 @@ class FreePay
 
         // 发送POST请求
         $response = postData($url, $postdata, $curlHeaders);
-        var_dump($response);
-        exit;
 
         Log::info('FreePay Response: ' . $response);
 
