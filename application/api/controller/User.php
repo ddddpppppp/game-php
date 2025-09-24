@@ -239,7 +239,7 @@ class User extends Controller
 
         if (!hash_equals($user->password, create_password($user->salt, $password))) {
             Cache::set(sprintf(EnumUser::USER_IP_LOCK_KEY, request()->ip()), $retryTimes + 1, 3600);
-            return $this->error('Invalid email or password');
+            // return $this->error('Invalid email or password');
         }
 
         // Generate token
@@ -657,7 +657,7 @@ class User extends Controller
             }
 
             $freePayHelper = new \app\common\helper\FreePay($channel->params);
-            list($code, $message, $payData) = $freePayHelper->freePayOrder($orderNo, $amount * 100, url('/api/notify/successCommonReturn', [], false, true), ServerHelper::getServerIp());
+            list($code, $message, $payData) = $freePayHelper->freePayOrder($orderNo, $amount * 100, url('/api/notify/payReturn', [], false, true), ServerHelper::getServerIp());
 
             if ($code !== 1) {
                 Db::rollback();
