@@ -21,6 +21,7 @@ class Menu
                 'canada28ProductSetting' => ['name' => '玩法设置', 'children' => ['canada28ProductSetting.browse' => ['name' => '浏览']]],
                 'canada28OrderList' => ['name' => '投注记录', 'children' => ['canada28OrderList.browse' => ['name' => '浏览']]],
                 'canada28CrawList' => ['name' => '开奖记录', 'children' => ['canada28CrawList.browse' => ['name' => '浏览']]],
+                'canada28Fianace' => ['name' => '财务统计', 'children' => ['canada28Fianace.browse' => ['name' => '浏览']]],
             ]
         ],
         'backendManage' => [

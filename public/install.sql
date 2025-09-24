@@ -121,8 +121,8 @@ CREATE TABLE IF NOT EXISTS `game_system_setting` (
 
 -- 插入默认系统设置数据
 INSERT INTO `game_system_setting` (`name`, `title`, `description`, `config`, `status`, `sort`, `created_at`, `updated_at`) VALUES
-('recharge_setting', '充值设置', '配置充值相关参数', '{"min_amount":10,"max_amount":10000,"usdt_gift_rate":2,"cashapp_gift_rate":0, "usdc_online_gift_rate":2}', 1, 1, NOW(), NOW()),
-('withdraw_setting', '提现设置', '配置提现相关参数', '{"min_amount":50,"max_amount":50000,"usdt_fee_rate":2, "cashapp_fee_rate":0, "usdc_fee_rate":0, "daily_limit":3, "gift_transaction_times": 3}', 1, 4, NOW(), NOW());
+('recharge_setting', '充值设置', '配置充值相关参数', '{"usdt_min_amount":10,"usdt_max_amount":10000,"cashapp_min_amount":10,"cashapp_max_amount":10000,"usdc_online_min_amount":10,"usdc_online_max_amount":10000,"usdt_gift_rate":2,"cashapp_gift_rate":0,"usdc_online_gift_rate":2}', 1, 1, NOW(), NOW()),
+('withdraw_setting', '提现设置', '配置提现相关参数', '{"min_amount":50,"max_amount":50000,"usdt_fee_rate":2, "cashapp_fee_rate":0, "usdc_online_fee_rate":0, "daily_limit":3, "gift_transaction_times": 3}', 1, 4, NOW(), NOW());
 
 -- DROP TABLE IF EXISTS `game_users`;
 CREATE TABLE
@@ -185,7 +185,7 @@ CREATE TABLE IF NOT EXISTS `game_transactions` (
 CREATE TABLE IF NOT EXISTS `game_user_balances` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
   `user_id` bigint(20) unsigned NOT NULL COMMENT '用户ID',
-  `type` varchar(20) NOT NULL COMMENT '变动类型：gift-赠送, deposit-充值, withdraw-提现, game_bet-投注, game_win-收益',
+  `type` varchar(20) NOT NULL COMMENT '变动类型：gift-赠送, deposit-充值, deposit_gift-充值赠送, withdraw-提现, game_bet-投注, game_win-收益',
   `amount` decimal(15,2) NOT NULL COMMENT '变动金额',
   `balance_before` decimal(15,4) NOT NULL COMMENT '变动前余额',
   `balance_after` decimal(15,4) NOT NULL COMMENT '变动后余额',
@@ -205,7 +205,7 @@ CREATE TABLE
         `id` int (11) NOT NULL AUTO_INCREMENT,
         `name` varchar(50) NOT NULL COMMENT '名称',
         `belong_admin_id` char(36) NOT NULL COMMENT '所属管理者id',
-        `type` Enum ('paypal', 'cashapp', 'usdt') NOT NULL COMMENT '类型',
+        `type` Enum ('paypal', 'cashapp', 'usdt', 'usdc_online') NOT NULL COMMENT '类型',
         `rate` decimal(3, 1) NOT NULL DEFAULT 0 COMMENT '费率',
         `charge_fee` decimal(5, 2) NOT NULL DEFAULT 0 COMMENT '单笔手续费',
         `count_time` varchar(30) NOT NULL COMMENT '结算时间',
@@ -225,6 +225,36 @@ CREATE TABLE
         KEY `belong_admin_id` (`belong_admin_id`),
         KEY `type` (`type`)
     ) ENGINE = InnoDB DEFAULT CHARSET = utf8 AUTO_INCREMENT = 1 COMMENT '代收渠道';
+INSERT INTO `game_payment_channel` (`id`, `name`, `belong_admin_id`, `type`, `rate`, `charge_fee`, `count_time`, `guarantee`, `freeze_time`, `day_limit_money`, `day_limit_count`, `remark`, `status`, `is_backup`, `params`, `sort`, `created_at`, `updated_at`, `deleted_at`) VALUES (NULL, 'dfpay-usdt', '4c7c0273-3382-45bd-9b6d-d31efe4da389', 'usdt', '0.0', '0.00', '3', '0', '0', '9999999.00', '1000', '', '1', '-1', '{\"address\": \"xxxxxxxxxxssssssss\"}', '1', '2024-04-27 14:04:54', '2025-09-23 14:39:21', NULL);
+INSERT INTO `game_payment_channel` (`id`, `name`, `belong_admin_id`, `type`, `rate`, `charge_fee`, `count_time`, `guarantee`, `freeze_time`, `day_limit_money`, `day_limit_count`, `remark`, `status`, `is_backup`, `params`, `sort`, `created_at`, `updated_at`, `deleted_at`) VALUES (NULL, 'dfpay-cashapp', '4c7c0273-3382-45bd-9b6d-d31efe4da389', 'cashapp', '10.0', '0.30', '3', '0', '0', '10000.00', '1000', '', '1', '-1', '{\"mchNo\": \"xxxxxxxxxxssssssss\", \"appKey\": \"appSecret\", \"payWay\": \"cashapp-PROD\", \"appSecret\": \"appSecret\"}', '1', '2024-04-27 14:04:54', '2025-09-23 14:38:48', NULL);
+INSERT INTO `game_payment_channel` (`id`, `name`, `belong_admin_id`, `type`, `rate`, `charge_fee`, `count_time`, `guarantee`, `freeze_time`, `day_limit_money`, `day_limit_count`, `remark`, `status`, `is_backup`, `params`, `sort`, `created_at`, `updated_at`, `deleted_at`) VALUES (NULL, 'dfpay-usdc', '4c7c0273-3382-45bd-9b6d-d31efe4da389', 'usdc_online', '1.0', '0.30', '3', '0', '0', '9999999.00', '1000', '', '1', '-1', '{\"key\": \"sk_oCV5tfyvul7gOJ2Vye1Au\", \"url\": \"https://gateway.sparkham.com\", \"appId\": \"AP1969009033495056384\", \"mchNo\": \"MID1969007979084779520\"}', '1', '2024-04-27 14:04:54', '2025-09-23 14:39:27', NULL);
+
+-- DROP TABLE IF EXISTS `game_withdraw_channel`;
+CREATE TABLE
+    IF NOT EXISTS `game_withdraw_channel` (
+        `id` int (11) NOT NULL AUTO_INCREMENT,
+        `name` varchar(50) NOT NULL COMMENT '名称',
+        `belong_admin_id` char(36) NOT NULL COMMENT '所属管理者id',
+        `type` Enum ('paypal', 'cashapp', 'usdt', 'usdc_online') NOT NULL COMMENT '类型',
+        `rate` decimal(3, 1) NOT NULL DEFAULT 0 COMMENT '费率',
+        `charge_fee` decimal(5, 2) NOT NULL DEFAULT 0 COMMENT '单笔手续费',
+        `day_limit_money` decimal(10, 2) NOT NULL COMMENT '每日限额',
+        `day_limit_count` int (11) NOT NULL COMMENT '每日限额次数',
+        `remark` varchar(50) NOT NULL COMMENT '备注',
+        `status` tinyint (2) NOT NULL DEFAULT 1 COMMENT '-1停用，1开启',
+        `is_backup` tinyint (2) NOT NULL DEFAULT -1 COMMENT '是否备用渠道',
+        `params` json NOT NULL COMMENT '渠道参数',
+        `sort` int (11) NOT NULL,
+        `created_at` datetime DEFAULT null,
+        `updated_at` datetime DEFAULT null,
+        `deleted_at` datetime DEFAULT null,
+        PRIMARY KEY (`id`),
+        KEY `belong_admin_id` (`belong_admin_id`),
+        KEY `type` (`type`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8 AUTO_INCREMENT = 1 COMMENT '代收渠道';
+INSERT INTO `game_withdraw_channel` (`id`, `name`, `belong_admin_id`, `type`, `rate`, `charge_fee`, `day_limit_money`, `day_limit_count`, `remark`, `status`, `is_backup`, `params`, `sort`, `created_at`, `updated_at`, `deleted_at`) VALUES (NULL, 'dfpay-usdt', '4c7c0273-3382-45bd-9b6d-d31efe4da389', 'usdt', '1.0', '0.00', '9999999.00', '1000', '', '1', '-1', '{}', '1', '2024-04-27 14:04:54', '2025-09-23 14:39:21', NULL);
+INSERT INTO `game_withdraw_channel` (`id`, `name`, `belong_admin_id`, `type`, `rate`, `charge_fee`, `day_limit_money`, `day_limit_count`, `remark`, `status`, `is_backup`, `params`, `sort`, `created_at`, `updated_at`, `deleted_at`) VALUES (NULL, 'dfpay-cashapp', '4c7c0273-3382-45bd-9b6d-d31efe4da389', 'cashapp', '1.0', '0.00', '9999999.00', '1000', '', '1', '-1', '{}', '1', '2024-04-27 14:04:54', '2025-09-23 14:38:48', NULL);
+INSERT INTO `game_withdraw_channel` (`id`, `name`, `belong_admin_id`, `type`, `rate`, `charge_fee`, `day_limit_money`, `day_limit_count`, `remark`, `status`, `is_backup`, `params`, `sort`, `created_at`, `updated_at`, `deleted_at`) VALUES (NULL, 'dfpay-usdc', '4c7c0273-3382-45bd-9b6d-d31efe4da389', 'usdc_online', '1.0', '0.00', '9999999.00', '1000', '', '1', '-1', '{}', '1', '2024-04-27 14:04:54', '2025-09-23 14:39:27', NULL);
 
 -- DROP TABLE IF EXISTS `game_email_auto_auth`;
 CREATE TABLE IF NOT EXISTS `game_email_auto_auth` (

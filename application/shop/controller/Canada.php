@@ -27,6 +27,7 @@ use app\common\model\MiningProducts;
 use app\common\model\MiningProductDailyApy;
 use app\common\model\Transactions;
 use app\common\model\Canada28BetTypes;
+use app\shop\service\Canada as CanadaService;
 
 class Canada extends Controller
 {
@@ -414,13 +415,13 @@ class Canada extends Controller
             $prevEndDateUTC = TimeHelper::convertToUTC($prevEndDate . ' 23:59:59');
 
             // 1. 获取当前周期统计数据
-            $currentStats = $this->getStatsForPeriod($startDateUTC, $endDateUTC);
+            $currentStats = CanadaService::getStatsForPeriod($startDateUTC, $endDateUTC);
 
             // 2. 获取上一周期统计数据（用于计算趋势）
-            $prevStats = $this->getStatsForPeriod($prevStartDateUTC, $prevEndDateUTC);
+            $prevStats = CanadaService::getStatsForPeriod($prevStartDateUTC, $prevEndDateUTC);
 
             // 3. 计算趋势
-            $trends = $this->calculateTrends($currentStats, $prevStats);
+            $trends = CanadaService::calculateTrends($currentStats, $prevStats);
         } catch (\Exception $e) {
             return $this->error('获取失败：' . $e->getMessage());
         }
@@ -456,7 +457,7 @@ class Canada extends Controller
             $endDateUTC = TimeHelper::convertToUTC($endDate . ' 23:59:59');
 
             // 获取图表数据
-            $chartData = $this->getSimpleChartData($startDateUTC, $endDateUTC, $period);
+            $chartData = CanadaService::getSimpleChartData($startDateUTC, $endDateUTC, $period);
         } catch (\Exception $e) {
             return $this->error('获取失败：' . $e->getMessage());
         }
@@ -464,208 +465,24 @@ class Canada extends Controller
     }
 
     /**
-     * 获取指定时间段的统计数据
+     * 获取财务统计数据
      */
-    private function getStatsForPeriod($startDate, $endDate)
+    public function getFinanceStats()
     {
-        // 充值统计（包含通道费计算）
-        $depositStats = \think\Db::table('game_transactions')
-            ->alias('t')
-            ->leftJoin('game_payment_channel c', 't.channel_id = c.id')
-            ->where('t.type', 'deposit')
-            ->where('t.status', 'completed')
-            ->where('t.created_at', 'between', [$startDate, $endDate])
-            ->where('t.deleted_at', null)
-            ->field([
-                'SUM(t.amount) as total_amount',
-                'COUNT(*) as total_count',
-                'SUM(t.amount * (c.rate / 100) + c.charge_fee) as total_channel_fee'
-            ])
-            ->find();
-        // 提现统计（包含手续费）
-        $withdrawStats = \think\Db::table('game_transactions')
-            ->where('type', 'withdraw')
-            ->where('status', 'completed')
-            ->where('created_at', 'between', [$startDate, $endDate])
-            ->where('deleted_at', null)
-            ->field([
-                'SUM(amount) as total_amount',
-                'SUM(fee) as total_fee',
-                'COUNT(*) as total_count'
-            ])
-            ->find();
+        try {
+            // 获取搜索参数
+            $startDate = $this->params['start_date'] ?? date('Y-m-d', strtotime('-6 days'));
+            $endDate = $this->params['end_date'] ?? date('Y-m-d');
 
+            // 将本地时间转换为UTC时间用于数据库查询
+            $startDateUTC = TimeHelper::convertToUTC($startDate . ' 00:00:00');
+            $endDateUTC = TimeHelper::convertToUTC($endDate . ' 23:59:59');
 
-        $depositAmount = floatval($depositStats['total_amount'] ?? 0);
-        $withdrawAmount = floatval($withdrawStats['total_amount'] ?? 0);
-        $depositChannelFee = floatval($depositStats['total_channel_fee'] ?? 0);
-        $withdrawFee = floatval($withdrawStats['total_fee'] ?? 0);
-
-        // 毛利润 = 充值金额 - 提现金额 + 手续费
-        $grossProfit = $depositAmount - $withdrawAmount + $withdrawFee;
-
-        // 实际利润 = 充值金额 - 提现金额 + 手续费 - 充值通道费
-        $realProfit = $depositAmount - $withdrawAmount + $withdrawFee - $depositChannelFee;
-
-        return [
-            'depositAmount' => $depositAmount,
-            'depositCount' => intval($depositStats['total_count'] ?? 0),
-            'withdrawAmount' => $withdrawAmount,
-            'withdrawCount' => intval($withdrawStats['total_count'] ?? 0),
-            'depositChannelFee' => $depositChannelFee,
-            'withdrawFee' => $withdrawFee,
-            'grossProfit' => $grossProfit,
-            'realProfit' => $realProfit,
-        ];
-    }
-
-    /**
-     * 计算趋势百分比
-     */
-    private function calculateTrends($current, $prev)
-    {
-        $trends = [];
-        $fields = ['depositAmount', 'withdrawAmount', 'depositChannelFee', 'withdrawFee', 'grossProfit', 'realProfit'];
-
-        foreach ($fields as $field) {
-            $currentValue = $current[$field] ?? 0;
-            $prevValue = $prev[$field] ?? 0;
-
-            if ($prevValue == 0) {
-                $percentage = $currentValue > 0 ? 100 : 0;
-                $trend = $currentValue >= 0 ? 'up' : 'down';
-            } else {
-                $percentage = abs(($currentValue - $prevValue) / $prevValue * 100);
-                $trend = $currentValue >= $prevValue ? 'up' : 'down';
-            }
-
-            $trends[$field] = [
-                'value' => round($percentage, 1),
-                'trend' => $trend
-            ];
+            // 获取按渠道分组的财务统计数据
+            $financeData = CanadaService::getFinanceStatsByChannel($startDateUTC, $endDateUTC);
+        } catch (\Exception $e) {
+            return $this->error('获取失败：' . $e->getMessage());
         }
-
-        return $trends;
-    }
-
-    /**
-     * 获取简化的图表数据（仅充值和提现）
-     */
-    private function getSimpleChartData($startDate, $endDate, $period)
-    {
-        // 根据周期设置日期格式和分组
-        switch ($period) {
-            case 'day':
-                $dateField = 'DATE(created_at)';
-                break;
-            case 'week':
-                $dateField = 'YEARWEEK(created_at, 1)';
-                break;
-            case 'month':
-                $dateField = 'DATE_FORMAT(created_at, "%Y-%m")';
-                break;
-            default:
-                $dateField = 'DATE(created_at)';
-        }
-
-        // 充值数据
-        $depositData = \think\Db::table('game_transactions')
-            ->field([
-                $dateField . ' as date_group',
-                'SUM(amount) as amount'
-            ])
-            ->where('type', 'deposit')
-            ->where('status', 'completed')
-            ->where('created_at', 'between', [$startDate, $endDate])
-            ->where('deleted_at', null)
-            ->group('date_group')
-            ->order('date_group ASC')
-            ->select();
-
-        // 提现数据
-        $withdrawData = \think\Db::table('game_transactions')
-            ->field([
-                $dateField . ' as date_group',
-                'SUM(amount) as amount'
-            ])
-            ->where('type', 'withdraw')
-            ->where('status', 'completed')
-            ->where('created_at', 'between', [$startDate, $endDate])
-            ->where('deleted_at', null)
-            ->group('date_group')
-            ->order('date_group ASC')
-            ->select();
-
-        // 生成完整的日期点
-        $datePoints = $this->generateDatePoints($startDate, $endDate, $period);
-
-        // 填充数据
-        $labels = [];
-        $depositAmountData = [];
-        $withdrawAmountData = [];
-
-        // 将数据转换为以日期为key的数组便于查找
-        $depositMap = [];
-        foreach ($depositData as $item) {
-            $depositMap[$item['date_group']] = $item['amount'];
-        }
-
-        $withdrawMap = [];
-        foreach ($withdrawData as $item) {
-            $withdrawMap[$item['date_group']] = $item['amount'];
-        }
-
-        foreach ($datePoints as $dateKey => $label) {
-            $labels[] = $label;
-            $depositAmountData[] = floatval($depositMap[$dateKey] ?? 0);
-            $withdrawAmountData[] = floatval($withdrawMap[$dateKey] ?? 0);
-        }
-
-        return [
-            'labels' => $labels,
-            'depositData' => $depositAmountData,
-            'withdrawData' => $withdrawAmountData,
-        ];
-    }
-
-    /**
-     * 生成日期点
-     */
-    private function generateDatePoints($startDate, $endDate, $period)
-    {
-        $datePoints = [];
-        $start = new \DateTime($startDate);
-        $end = new \DateTime($endDate);
-
-        if ($period == 'day') {
-            // 生成天级别的日期点
-            while ($start <= $end) {
-                $dateKey = $start->format('Y-m-d');
-                $label = $start->format('m-d');
-                $datePoints[$dateKey] = $label;
-                $start->add(new \DateInterval('P1D'));
-            }
-        } elseif ($period == 'week') {
-            // 生成周级别的日期点
-            $start->modify('monday this week'); // 调整到周一
-            while ($start <= $end) {
-                $year = $start->format('Y');
-                $week = $start->format('W');
-                $dateKey = $year . str_pad($week, 2, '0', STR_PAD_LEFT); // YYYYWW格式
-                $label = $start->format('Y年第W周');
-                $datePoints[$dateKey] = $label;
-                $start->add(new \DateInterval('P1W'));
-            }
-        } elseif ($period == 'month') {
-            // 生成月级别的日期点
-            while ($start <= $end) {
-                $dateKey = $start->format('Y-m');
-                $label = $start->format('Y-m');
-                $datePoints[$dateKey] = $label;
-                $start->add(new \DateInterval('P1M'));
-            }
-        }
-
-        return $datePoints;
+        return $this->success($financeData);
     }
 }

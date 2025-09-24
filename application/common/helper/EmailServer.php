@@ -5,6 +5,7 @@ namespace app\common\helper;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
+use think\facade\Log;
 
 /**
  * Email server class using PHPMailer
@@ -84,7 +85,7 @@ class EmailServer
             if ($this->debug) {
                 $mail->SMTPDebug = SMTP::DEBUG_SERVER;
                 $mail->Debugoutput = function ($str, $level) {
-                    error_log("PHPMailer Debug: $str");
+                    Log::error("PHPMailer Debug: $str");
                 };
             }
 
@@ -208,15 +209,8 @@ class EmailServer
      */
     private function writeLog($level, $message)
     {
-        $log_file = dirname(__FILE__) . '/../../runtime/log/email_' . date('Y-m-d') . '.log';
-        $log_dir = dirname($log_file);
-
-        if (!is_dir($log_dir)) {
-            mkdir($log_dir, 0755, true);
-        }
-
         $log_content = '[' . date('Y-m-d H:i:s') . '] [' . $level . '] ' . $message . PHP_EOL;
-        file_put_contents($log_file, $log_content, FILE_APPEND | LOCK_EX);
+        Log::error($log_content);
     }
 
     /**

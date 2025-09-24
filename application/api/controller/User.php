@@ -20,6 +20,7 @@ use app\common\service\UserBalance;
 use app\shop\enum\Admin;
 use app\shop\model\SystemSetting;
 use app\common\helper\EmailServer;
+use app\common\model\WithdrawChannel;
 use think\Db;
 use think\facade\Cache;
 use think\facade\Log;
@@ -151,18 +152,36 @@ class User extends Controller
             return $this->error('Password must be at least 8 characters');
         }
 
+        $retryTimes = Cache::get(sprintf(EnumUser::USER_IP_LOCK_KEY, request()->ip()));
+        if ($retryTimes >= 10) {
+            return $this->error('Too many login attempts, please try again later');
+        }
+
         // Verify email code
         $cacheKey = sprintf(EnumUser::EMAIL_VERIFICATION_CODE_KEY, $email);
         $storedCode = Cache::get($cacheKey);
 
         if (!$storedCode || $storedCode !== $code) {
+            Cache::set(sprintf(EnumUser::USER_IP_LOCK_KEY, request()->ip()), $retryTimes + 1, 3600);
             return $this->error('Invalid or expired verification code');
         }
 
         // Check if email already exists
-        if (Users::where('username', $email)->find()) {
+        if (Users::where('username', $email)->count()) {
+            Cache::set(sprintf(EnumUser::USER_IP_LOCK_KEY, request()->ip()), $retryTimes + 1, 3600);
             return $this->error('Email already registered');
         }
+
+        if (Users::where('device_code', $deviceCode)->count()) {
+            Cache::set(sprintf(EnumUser::USER_IP_LOCK_KEY, request()->ip()), $retryTimes + 1, 3600);
+            return $this->error('something went wrong');
+        }
+
+        if (Users::where('ip', $userIp)->count()) {
+            Cache::set(sprintf(EnumUser::USER_IP_LOCK_KEY, request()->ip()), $retryTimes + 1, 3600);
+            return $this->error('something went wrong');
+        }
+
 
         try {
             Db::startTrans();
@@ -554,8 +573,16 @@ class User extends Controller
         }
 
         $rechargeConfig = json_decode($config, true);
-        $minAmount = $rechargeConfig['min_amount'] ?? 10;
-        $maxAmount = $rechargeConfig['max_amount'] ?? 10000;
+        if ($method === 'usdt') {
+            $minAmount = $rechargeConfig['usdt_min_amount'] ?? 10;
+            $maxAmount = $rechargeConfig['usdt_max_amount'] ?? 10000;
+        } else if ($method === 'cashapp') {
+            $minAmount = $rechargeConfig['cashapp_min_amount'] ?? 10;
+            $maxAmount = $rechargeConfig['cashapp_max_amount'] ?? 10000;
+        } else if ($method === 'usdc_online') {
+            $minAmount = $rechargeConfig['usdc_online_min_amount'] ?? 10;
+            $maxAmount = $rechargeConfig['usdc_online_max_amount'] ?? 10000;
+        }
 
         if ($amount < $minAmount) {
             return $this->error("Minimum deposit amount is {$minAmount}");
@@ -564,6 +591,7 @@ class User extends Controller
         if ($amount > $maxAmount) {
             return $this->error("Maximum deposit amount is {$maxAmount}");
         }
+
 
         // 生成订单号
         $orderNo = 'D' . date('YmdHis') . rand(1000, 9999);
@@ -577,6 +605,16 @@ class User extends Controller
 
             if (!$channel) {
                 return $this->error('CashApp payment channel not available');
+            }
+
+            $dailyDepositAmount = Transactions::where('user_id', $this->user->id)
+                ->where('type', 'deposit')
+                ->where('status', 'completed')
+                ->where('created_at', '>=', date('Y-m-d'))
+                ->sum('amount');
+
+            if ($dailyDepositAmount >= $maxAmount) {
+                return $this->error('Cashapp daily deposit limit exceeded ({$maxAmount}), try switch to other method');
             }
 
             $dfpayHelper = new \app\common\helper\DfpayHelper($channel->params);
@@ -788,6 +826,12 @@ class User extends Controller
         if ($todayWithdrawCount >= $dailyLimit) {
             return $this->error("Daily withdraw limit exceeded ({$dailyLimit} times per day)");
         }
+        $channel = WithdrawChannel::where('type', $method)
+            ->where('status', 1)
+            ->find();
+        if (!$channel) {
+            return $this->error('Withdraw channel not available');
+        }
 
         // 计算手续费
         $fee = $amount * $feeRate / 100;
@@ -802,7 +846,7 @@ class User extends Controller
             $transaction = new Transactions();
             $transaction->user_id = $this->user->id;
             $transaction->type = 'withdraw';
-            $transaction->channel_id = $method;
+            $transaction->channel_id = $channel->id;
             $transaction->amount = $amount;
             $transaction->actual_amount = $actualAmount;
             $transaction->account = $account;

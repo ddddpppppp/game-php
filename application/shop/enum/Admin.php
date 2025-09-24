@@ -20,6 +20,8 @@ class Admin
         'canada28OrderList.browse',
         'canada28CrawList',
         'canada28CrawList.browse',
+        'canada28Fianace',
+        'canada28Fianace.browse',
 
         // user
         'user',
