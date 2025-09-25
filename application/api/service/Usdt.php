@@ -12,9 +12,9 @@ use think\facade\Log;
 class Usdt
 {
 
-    // TronGrid API 配置
-    const TRON_API_URL = 'https://api.trongrid.io';
-    const USDT_CONTRACT_ADDRESS = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
+    // Etherscan API 配置
+    const ETHERSCAN_API_URL = 'https://api.etherscan.io/api';
+    const USDT_CONTRACT_ADDRESS = '0xdAC17F958D2ee523a2206206994597C13D831ec7'; // 以太坊主网 USDT 合约地址
     /**
      * 生成唯一的USDT金额(添加随机三位小数)
      */
@@ -72,7 +72,7 @@ class Usdt
                 return [0, '收款地址未配置'];
             }
 
-            // 调用真实的区块链API检查交易
+            // 调用 Etherscan API 检查交易
             list($found, $txHash, $actualAmount) = self::checkUsdtTransaction($receivingAddress, $deposit->usdt_amount, 1800);
 
             if ($found) {
@@ -87,7 +87,7 @@ class Usdt
     }
 
     /**
-     * 使用TronGrid API检查USDT交易
+     * 使用Etherscan API检查USDT交易
      * @param string $address 收款地址
      * @param float $expectedAmount 期望金额
      * @param int $timeWindow 时间窗口(秒)
@@ -96,30 +96,52 @@ class Usdt
     public static function checkUsdtTransaction($address, $expectedAmount, $timeWindow = 1800)
     {
         try {
-            // 获取当前时间戳(毫秒)
-            $endTime = time() * 1000;
-            $startTime = $endTime - ($timeWindow * 1000);
+            // 获取当前时间和起始时间
+            $endTime = time();
+            $startTime = $endTime - $timeWindow;
 
-            // 构建API请求URL
-            $url = self::TRON_API_URL . '/v1/accounts/' . $address . '/transactions/trc20?limit=200&contract_address=' . self::USDT_CONTRACT_ADDRESS;
+            // 获取最新的区块号
+            $latestBlock = self::getLatestBlockNumber();
+            if (!$latestBlock) {
+                Log::warning('无法获取最新区块号');
+                return [false, '', 0];
+            }
+
+            // 估算起始区块号 (以太坊平均13秒一个块)
+            $blocksBack = ceil($timeWindow / 13);
+            $startBlock = max(1, $latestBlock - $blocksBack);
+
+            // 构建API请求URL - 获取ERC20代币转账记录（使用免费API，无需key）
+            $url = self::ETHERSCAN_API_URL . '?' . http_build_query([
+                'module' => 'account',
+                'action' => 'tokentx',
+                'contractaddress' => self::USDT_CONTRACT_ADDRESS,
+                'address' => $address,
+                'startblock' => $startBlock,
+                'endblock' => 'latest',
+                'page' => 1,
+                'offset' => 100, // 免费API限制更少的记录数
+                'sort' => 'desc'
+            ]);
 
             // 发送HTTP请求
             $response = self::sendRequest($url);
 
-            if (!$response || !isset($response['data'])) {
-                Log::warning('TronGrid API返回异常: ' . json_encode($response));
+            if (!$response || $response['status'] !== '1' || !isset($response['result'])) {
+                Log::warning('Etherscan API返回异常: ' . json_encode($response));
                 return [false, '', 0];
             }
 
             // 检查交易记录
-            foreach ($response['data'] as $transaction) {
+            foreach ($response['result'] as $transaction) {
                 // 检查时间范围
-                if ($transaction['block_timestamp'] < $startTime) {
+                $txTime = intval($transaction['timeStamp']);
+                if ($txTime < $startTime) {
                     continue;
                 }
 
                 // 检查是否是转入交易
-                if ($transaction['to'] !== $address || $transaction['type'] !== 'Transfer') {
+                if (strtolower($transaction['to']) !== strtolower($address)) {
                     continue;
                 }
 
@@ -128,7 +150,7 @@ class Usdt
 
                 // 检查金额是否匹配(允许0.0001的误差)
                 if (abs($actualAmount - $expectedAmount) <= 0.0001) {
-                    return [true, $transaction['transaction_id'], $actualAmount];
+                    return [true, $transaction['hash'], $actualAmount];
                 }
             }
 
@@ -136,6 +158,31 @@ class Usdt
         } catch (\Exception $e) {
             Log::error('检查USDT支付失败: ' . $e->getMessage());
             return [false, '', 0];
+        }
+    }
+
+    /**
+     * 获取最新区块号
+     */
+    private static function getLatestBlockNumber()
+    {
+        try {
+            $url = self::ETHERSCAN_API_URL . '?' . http_build_query([
+                'module' => 'proxy',
+                'action' => 'eth_blockNumber'
+            ]);
+
+            $response = self::sendRequest($url);
+
+            if (!$response || !isset($response['result'])) {
+                return false;
+            }
+
+            // 将十六进制转换为十进制
+            return hexdec($response['result']);
+        } catch (\Exception $e) {
+            Log::error('获取最新区块号失败: ' . $e->getMessage());
+            return false;
         }
     }
 
@@ -149,7 +196,7 @@ class Usdt
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Web3-Deposit-System/1.0');
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Ethereum-Deposit-System/1.0');
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
             'Accept: application/json'

@@ -7,7 +7,7 @@ use app\common\model\BaseModel;
 /**
  * @property integer $id id
  * @property integer $user_id 用户ID
- * @property string $type 变动类型：deposit-充值, withdraw-提现, game_bet-投注, game_win-收益
+ * @property string $type 变动类型：game_bet-投注
  * @property float $amount 变动金额
  * @property float $balance_before 变动前余额
  * @property float $balance_after 变动后余额
@@ -15,10 +15,10 @@ use app\common\model\BaseModel;
  * @property string $related_id 关联ID
  * @property \DateTime $updated_at 更新时间
  */
-class UserBalances extends BaseModel
+class UserFrozenBalances extends BaseModel
 {
     protected $connection = 'mysql';
-    protected $table = 'game_user_balances';
+    protected $table = 'game_user_frozen_balances';
 
     // 主键字段
     protected $pk = 'id';

@@ -89,7 +89,7 @@ class User extends Controller
         // Check rate limiting (1 code per minute)
         $rateLimitKey = sprintf(EnumUser::EMAIL_RATE_LIMIT_KEY, $email);
         if (Cache::get($rateLimitKey)) {
-            // return $this->error('Please wait before re   questing another code');
+            return $this->error('Please wait before re   questing another code');
         }
 
         // Generate 6-digit verification code
@@ -174,12 +174,12 @@ class User extends Controller
 
         if (Users::where('device_code', $deviceCode)->count()) {
             Cache::set(sprintf(EnumUser::USER_IP_LOCK_KEY, request()->ip()), $retryTimes + 1, 3600);
-            return $this->error('something went wrong');
+            return $this->error('Currently unable to sign up');
         }
 
         if (Users::where('ip', $userIp)->count()) {
             Cache::set(sprintf(EnumUser::USER_IP_LOCK_KEY, request()->ip()), $retryTimes + 1, 3600);
-            return $this->error('something went wrong');
+            return $this->error('Currently unable to sign up');
         }
 
 
@@ -200,12 +200,15 @@ class User extends Controller
             $user->salt = $salt;
             $user->avatar = '';
             $user->ip = $userIp;
+            $user->balance = 0;
+            $user->balance_frozen = 0;
             $user->device_code = $deviceCode;
             $user->save();
 
             $systemConfig = SystemSetting::where('name', 'new_user_gift')->field('config')->find();
             if ($systemConfig) {
                 $gift = $systemConfig->config['gift_amount'];
+                $user->balance = $gift;
                 UserBalance::addUserBalance($user->id, $gift, 'gift', "Bonus for new user, gift amount: {$gift}", $user->id);
             }
 
@@ -227,7 +230,8 @@ class User extends Controller
                 'uuid' => $user->uuid,
                 'email' => $user->username,
                 'name' => $user->nickname,
-                'avatar' => $user->avatar ?: ''
+                'avatar' => $user->avatar ?: '',
+                'balance' => floatval($user->balance),
             ]
         ]);
     }
@@ -258,7 +262,7 @@ class User extends Controller
 
         if (!hash_equals($user->password, create_password($user->salt, $password))) {
             Cache::set(sprintf(EnumUser::USER_IP_LOCK_KEY, request()->ip()), $retryTimes + 1, 3600);
-            // return $this->error('Invalid email or password');
+            return $this->error('Invalid email or password');
         }
 
         // Generate token
@@ -271,7 +275,7 @@ class User extends Controller
                 'email' => $user->username,
                 'name' => $user->nickname,
                 'avatar' => $user->avatar ?: '',
-                'balance' => floatval(number_format($user->balance, 2, '.', '')),
+                'balance' => floatval($user->balance),
             ]
         ]);
     }
@@ -343,13 +347,19 @@ class User extends Controller
         if ($this->user->status != 1) {
             return $this->error('User is not active');
         }
+
+        // 获取余额详情
+        $balanceDetail = $this->getUserBalanceDetail($this->user);
+
         return $this->success([
             'user' => [
                 'uuid' => $this->user->uuid,
                 'email' => $this->user->username,
                 'name' => $this->user->nickname,
                 'avatar' => $this->user->avatar ?: '',
-                'balance' => floatval(number_format($this->user->balance, 2, '.', '')),
+                'balance' => floatval($this->user->balance),
+                'balance_frozen' => floatval($this->user->balance_frozen),
+                'balance_detail' => $balanceDetail,
                 'join_date' => TimeHelper::convertFromUTC($this->user->created_at, 'Y'),
             ]
         ]);
@@ -617,8 +627,8 @@ class User extends Controller
                 return $this->error('Cashapp daily deposit limit exceeded ({$maxAmount}), try switch to other method');
             }
 
-            $dfpayHelper = new \app\common\helper\DfpayHelper($channel->params);
-            list($code, $message, $payData) = $dfpayHelper->createOrder($orderNo, $amount);
+            $freePayHelper = new \app\common\helper\FreePay($channel->params);
+            list($code, $message, $payData) = $freePayHelper->freePayOrder($orderNo, $amount * 100, url('/api/notify/payReturn', [], false, true), ServerHelper::getServerIp(), ['methods' => 'cash_app_pay ']);
 
             if ($code !== 1) {
                 Db::rollback();
@@ -812,9 +822,21 @@ class User extends Controller
             return $this->error("Maximum withdraw amount is {$maxAmount}");
         }
 
-        // 检查余额
-        if ($this->user->balance < $amount) {
-            return $this->error('Insufficient balance');
+        // 获取用户余额详情
+        $balanceDetail = $this->getUserBalanceDetail($this->user);
+
+        // 检查余额 - 使用可提现余额而不是总余额
+        if ($balanceDetail['withdrawable_balance'] < $amount) {
+            $giftBalance = $balanceDetail['gift_balance'];
+            $otherBalance = $balanceDetail['other_balance'];
+            $totalBetAmount = $balanceDetail['total_bet_amount'];
+            $requiredBetAmount = $balanceDetail['required_bet_amount'];
+
+            if ($giftBalance > 0 && !$balanceDetail['gift_withdrawable']) {
+                return $this->error("Insufficient withdrawable balance. You have ${giftBalance} in gift balance that requires ${requiredBetAmount} total bets (currently ${totalBetAmount}) to unlock for withdrawal.");
+            } else {
+                return $this->error('Insufficient withdrawable balance');
+            }
         }
 
         // 检查今日提现次数
@@ -854,7 +876,6 @@ class User extends Controller
             $transaction->fee = $fee;
             $transaction->status = 'pending';
             $transaction->save();
-
             // 扣除余额
             UserBalance::subUserBalance($this->user->id, $amount, 'withdraw', "withdraw deducted, fee: {$fee}", $transaction->id);
             Db::commit();
@@ -871,5 +892,72 @@ class User extends Controller
             'status' => 'pending',
             'created_at' => $transaction->created_at
         ]);
+    }
+
+    /**
+     * 获取用户余额详情，区分gift余额和可提现余额
+     */
+    private function getUserBalanceDetail($user)
+    {
+        // 直接从users表获取gift余额（使用balance_frozen字段）
+        $giftBalance = $user->balance_frozen;
+
+        // 获取系统配置中的gift_transaction_times
+        $config = Db::name('system_setting')
+            ->where('name', 'withdraw_setting')
+            ->where('status', 1)
+            ->value('config');
+
+        $withdrawConfig = json_decode($config, true);
+        $giftTransactionTimes = $withdrawConfig['gift_transaction_times'] ?? 3;
+
+        $totalBetAmount = 0;
+        $requiredBetAmount = 0;
+        $giftWithdrawable = true; // 如果没有gift余额，默认可提现
+
+        if ($giftBalance > 0) {
+            // 获取最近的一条gift记录
+            $latestGiftRecord = Db::name('user_balances')
+                ->field('amount, created_at')
+                ->where('user_id', $user->id)
+                ->where('type', 'gift')
+                ->where('amount', '>', 0)
+                ->order('created_at', 'desc')
+                ->find();
+
+            if ($latestGiftRecord) {
+                // 计算自最近gift记录时间之后的投注金额
+                $totalBetAmount = Db::name('canada28_bets')
+                    ->where('user_id', $user->uuid)
+                    ->where('created_at', '>=', $latestGiftRecord['created_at'])
+                    ->sum('amount');
+
+                // 基于最近gift记录的金额计算需要的投注金额
+                $requiredBetAmount = $latestGiftRecord['amount'] * $giftTransactionTimes;
+
+                // 判断是否满足提现条件
+                $giftWithdrawable = $totalBetAmount >= $requiredBetAmount;
+            }
+        }
+
+        // 可提现的gift余额（如果满足条件则为全部gift余额，否则为0）
+        $withdrawableGiftBalance = $giftWithdrawable ? $giftBalance : 0;
+
+        // 其他类型余额（总余额 - gift余额）
+        $otherBalance = $user->balance - $giftBalance;
+
+        // 总可提现余额
+        $totalWithdrawableBalance = $otherBalance + $withdrawableGiftBalance;
+
+        return [
+            'total_balance' => floatval($user->balance), // 总余额
+            'gift_balance' => floatval($giftBalance), // gift余额
+            'other_balance' => floatval($otherBalance), // 其他余额
+            'withdrawable_balance' => floatval($totalWithdrawableBalance), // 可提现余额
+            'gift_withdrawable' => $giftWithdrawable, // gift是否可提现
+            'total_bet_amount' => floatval($totalBetAmount), // 自最近gift记录以来的投注金额
+            'required_bet_amount' => floatval($requiredBetAmount), // 需要的投注金额（基于最近gift记录）
+            'gift_transaction_times' => $giftTransactionTimes, // 倍数要求
+        ];
     }
 }

@@ -47,7 +47,6 @@ class Api extends Controller
         }
 
         $config = json_decode($setting['config'], true);
-
         return $this->success([
             'name' => $setting['name'],
             'title' => $setting['title'],

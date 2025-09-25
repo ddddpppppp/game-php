@@ -827,6 +827,11 @@ class Setting extends Controller
                     'gift_transaction_times' => intval($config['gift_transaction_times'] ?? 0),
                 ];
 
+            case 'new_user_gift':
+                return [
+                    'gift_amount' => floatval($config['gift_amount'] ?? 0),
+                ];
+
             default:
                 return $config;
         }

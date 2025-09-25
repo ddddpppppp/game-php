@@ -7,6 +7,7 @@ use app\api\enum\Imap;
 use app\api\service\Usdt;
 use app\common\controller\Controller;
 use app\common\enum\Bot;
+use app\common\enum\RedisKey;
 use app\common\helper\ArrayHelper;
 use app\common\helper\MicrosoftGraph;
 use app\common\helper\TgHelper;
@@ -21,13 +22,14 @@ use app\common\model\MiningProfits;
 use app\common\model\MiningRedemptions;
 use app\common\service\Email;
 use think\Db;
+use think\facade\Cache;
 use think\facade\Log;
 
 class Crontab extends Controller
 {
 
     /**
-     * 检查USDT充值状态，自动处理到账 - 每分钟执行一次
+     * 检查USDT充值状态，自动处理到账 - 每5s钟执行一次
      */
     public function checkDepositStatus()
     {
@@ -43,7 +45,12 @@ class Crontab extends Controller
 
         $successCount = 0;
         foreach ($pendingDeposits as $deposit) {
+            $lock = Cache::store('redis')->setNx(sprintf(RedisKey::PAY_PROCESSING, $deposit->order_no), '1');
+            if (!$lock) {
+                continue;
+            }
             list($code, $message) = Usdt::checkUsdtPayment($deposit);
+            Cache::store('redis')->del(sprintf(RedisKey::PAY_PROCESSING, $deposit->order_no));
             if ($code == 1) {
                 $successCount++;
                 echo date('Y-m-d H:i:s') . " - Deposit completed: {$deposit->order_no}" . PHP_EOL;

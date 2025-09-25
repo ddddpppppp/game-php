@@ -36,7 +36,7 @@ class Game extends Controller
     {
         $this->params = request()->param();
         $token = request()->header('Authorization') ?: request()->header('Token');
-        if (in_array(request()->action(), ['getcanada28game', 'getcanada28messages', 'getcanada28gamecurrentdraw', 'getcanada28drawhistory', 'getcanada28bethistory', 'placecanada28bet']) && empty($token)) {
+        if (in_array(request()->action(), ['getcanada28game', 'getcanada28messages', 'getcanada28gamecurrentdraw', 'getcanada28drawhistory', 'getcanada28bethistory']) && empty($token)) {
             return;
         }
         if (empty($token)) {

@@ -7,12 +7,12 @@
 
 return [
     // SMTP服务器配置
-    'smtp_host'     => 'mail.game-hub.cc',           // SMTP服务器地址
+    'smtp_host'     => 'smtpdm-ap-southeast-1.aliyun.com',           // SMTP服务器地址
     'smtp_port'     => 465,                     // SMTP端口号
-    'smtp_username' => 'secure@game-hub.cc',    // 发件人邮箱 (需要修改)
+    'smtp_username' => 'account@keno28.us',    // 发件人邮箱 (需要修改)
     'smtp_password' => 'HsdfhCjsdsd2323',    // 邮箱授权码 (需要修改)
     'smtp_secure'   => 'ssl',                  // 加密方式: tls/ssl
-    'from_name'     => 'Canada28',      // 发件人名称
+    'from_name'     => 'keno28.us',      // 发件人名称
     // 其他常用邮箱配置示例：
     // 
     // QQ邮箱 (推荐):

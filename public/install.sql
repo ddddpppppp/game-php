@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS `game_system_setting` (
 INSERT INTO `game_system_setting` (`name`, `title`, `description`, `config`, `status`, `sort`, `created_at`, `updated_at`) VALUES
 ('recharge_setting', '充值设置', '配置充值相关参数', '{"usdt_min_amount":10,"usdt_max_amount":10000,"cashapp_min_amount":10,"cashapp_max_amount":10000,"usdc_online_min_amount":10,"usdc_online_max_amount":10000,"usdt_gift_rate":2,"cashapp_gift_rate":0,"usdc_online_gift_rate":2}', 1, 1, NOW(), NOW()),
 ('withdraw_setting', '提现设置', '配置提现相关参数', '{"min_amount":50,"max_amount":50000,"usdt_fee_rate":2, "cashapp_fee_rate":0, "usdc_online_fee_rate":0, "daily_limit":3, "gift_transaction_times": 3}', 1, 4, NOW(), NOW());
-
+('new_user_gift', '新用户注册赠送', '配置新用户注册赠送相关参数', '{"gift_amount":20}', 1, 5, NOW(), NOW());
 -- DROP TABLE IF EXISTS `game_users`;
 CREATE TABLE
     IF NOT EXISTS `game_users` (
@@ -198,6 +198,24 @@ CREATE TABLE IF NOT EXISTS `game_user_balances` (
   KEY `idx_related_id` (`related_id`),
   KEY `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='余额变动日志';
+
+-- DROP TABLE IF EXISTS `game_user_frozen_balances`;
+CREATE TABLE IF NOT EXISTS `game_user_frozen_balances` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `user_id` bigint(20) unsigned NOT NULL COMMENT '用户ID',
+  `type` varchar(20) NOT NULL COMMENT '变动类型：game_bet-投注, gift-赠送',
+  `amount` decimal(15,2) NOT NULL COMMENT '变动金额',
+  `balance_before` decimal(15,4) NOT NULL COMMENT '变动前余额',
+  `balance_after` decimal(15,4) NOT NULL COMMENT '变动后余额',
+  `description` varchar(255) DEFAULT NULL COMMENT '描述',
+  `related_id` varchar(200)  DEFAULT NULL COMMENT '关联ID',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_type` (`type`),
+  KEY `idx_related_id` (`related_id`),
+  KEY `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='冻结余额变动日志';
 
 -- DROP TABLE IF EXISTS `game_payment_channel`;
 CREATE TABLE

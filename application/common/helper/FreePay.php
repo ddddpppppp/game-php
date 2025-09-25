@@ -140,7 +140,8 @@ class FreePay
             'notifyUrl' => $data['notifyUrl'] ?? '',
             'products' => $data['products'] ?? [],
             'returnUrl' => $data['returnUrl'] ?? '',
-            'wayCode' => $data['wayCode'] ?? ''
+            'wayCode' => $data['wayCode'] ?? '',
+            'extParam' => $data['extParam'] ?? []
         ];
     }
 
@@ -330,15 +331,15 @@ class FreePay
      * @param string $ip 客户端IP
      * @return array [payUrl, payId, error]
      */
-    public function freePayOrder($orderNo, $amount, $returnUrl, $ip)
+    public function freePayOrder($orderNo, $amount, $returnUrl, $ip, $extParam = [])
     {
         // 验证金额
         if ($amount < 449) {
-            return ['', '', '金额必须大于449分'];
+            return ['', 'amount must be greater than 449', ''];
         }
 
         // 构建请求数据
-        $request = self::createFreePayRequest([
+        $requestData = [
             'amount' => $amount,
             'appId' => $this->appId,
             'browser' => $this->generateRandomBrowser(),
@@ -350,8 +351,12 @@ class FreePay
             'notifyUrl' => 'https://php.game-hub.cc/api/notify/freePayNotify',
             'products' => $this->generateRandomProducts($amount, 'USD'),
             'returnUrl' => $returnUrl,
-            'wayCode' => 'A'
-        ]);
+            'wayCode' => 'A',
+        ];
+        if ($extParam) {
+            $requestData['extParam'] = $extParam;
+        }
+        $request = self::createFreePayRequest($requestData);
 
         // 序列化请求体
         $postdata = json_encode($request, JSON_UNESCAPED_SLASHES);
@@ -391,18 +396,19 @@ class FreePay
         // 发送POST请求
         $response = postData($url, $postdata, $curlHeaders);
 
+
         Log::info('FreePay Response: ' . $response);
 
         // 解析响应
         $result = json_decode($response, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            return ['', '', '解析响应失败: ' . json_last_error_msg()];
+            return ['', '解析响应失败: ' . json_last_error_msg(), ''];
         }
 
         // 检查响应状态
         if (!isset($result['code']) || (string)$result['code'] !== '200') {
             $errorMsg = isset($result['msg']) ? $result['msg'] : '未知错误';
-            return ['', '', $errorMsg];
+            return ['', $errorMsg, ''];
         }
 
         // 提取支付信息
