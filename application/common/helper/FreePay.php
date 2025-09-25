@@ -128,7 +128,7 @@ class FreePay
      */
     public static function createFreePayRequest($data = [])
     {
-        return [
+        $data = [
             'amount' => $data['amount'] ?? 0,
             'appId' => $data['appId'] ?? '',
             'browser' => $data['browser'] ?? [],
@@ -141,8 +141,11 @@ class FreePay
             'products' => $data['products'] ?? [],
             'returnUrl' => $data['returnUrl'] ?? '',
             'wayCode' => $data['wayCode'] ?? '',
-            'extParam' => $data['extParam'] ?? []
         ];
+        if ($data['extParam']) {
+            $data['extParam'] = $data['extParam'];
+        }
+        return $data;
     }
 
     /**
