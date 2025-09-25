@@ -89,7 +89,7 @@ class User extends Controller
         // Check rate limiting (1 code per minute)
         $rateLimitKey = sprintf(EnumUser::EMAIL_RATE_LIMIT_KEY, $email);
         if (Cache::get($rateLimitKey)) {
-            return $this->error('Please wait before re   questing another code');
+            return $this->error('Please wait before requesting another code');
         }
 
         // Generate 6-digit verification code
@@ -198,7 +198,7 @@ class User extends Controller
             $user->merchant_id = Admin::DEFAULT_MERCHANT_ID;
             $user->status = 1;
             $user->salt = $salt;
-            $user->avatar = '';
+            $user->avatar = 'https://keno28.us/keno_logo.png';
             $user->ip = $userIp;
             $user->balance = 0;
             $user->balance_frozen = 0;

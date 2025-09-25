@@ -335,12 +335,14 @@ class Game extends Controller
         ]);
     }
 
+
     /**
      * Canada28投注
      * 使用Redis锁防止重复提交
      */
     public function placeCanada28Bet()
     {
+        $bets = $this->params['bets'] ?? [];
         // Redis锁的key
         $lockKey = sprintf(Canada28::BET_LOCK_KEY, $this->user['uuid']);
         $lockExpire = 3; // 锁定3秒
@@ -351,80 +353,90 @@ class Game extends Controller
         }
 
         try {
-            // 获取参数
-            $betTypeId = intval($this->params['bet_type_id'] ?? 0);
-            $amount = floatval($this->params['amount'] ?? 0);
-
-            // 参数验证
-            if ($betTypeId <= 0) {
-                throw new \Exception('please select bet type');
+            $totalAmount = 0;
+            foreach ($bets as $betItem) {
+                $totalAmount += floatval($betItem['amount'] ?? 0);
             }
-
-            if ($amount <= 0) {
-                throw new \Exception('bet amount must be greater than 0');
-            }
-
-            // 获取投注类型配置
-            $betType = Canada28BetTypes::where('id', $betTypeId)
-                ->field('id,type_key,type_name,odds,status')
-                ->where('merchant_id', $this->user['merchant_id'])
-                ->where('status', 1)
-                ->find();
-
-            if (!$betType) {
-                throw new \Exception('bet type not found or disabled');
-            }
-
-            // 查找当前可投注的期数（status=0）
-            $currentDraw = Canada28Draws::where('status', Canada28Draws::STATUS_WAITING)
-                ->field('id,period_number,status,end_at')
-                ->where('end_at', '>', date('Y-m-d H:i:s', time() + 30))
-                ->order('period_number desc')
-                ->find();
-
-            if (!$currentDraw) {
-                throw new \Exception('no available bet period');
-            }
-
-            // 检查是否在开奖前30秒内（锁定投注）
-            $lockTime = strtotime($currentDraw['end_at']) - 30; // 开奖前30秒
-            if (time() >= $lockTime) {
-                throw new \Exception('betting is closed 30 seconds before the draw');
-            }
-
-            // 检查用户余额
-            if ($this->user['balance'] < $amount) {
+            if ($totalAmount > $this->user['balance']) {
                 throw new \Exception('insufficient balance');
             }
+            foreach ($bets as $betItem) {
+                // 获取参数
+                $betTypeId = intval($betItem['bet_type_id'] ?? 0);
+                $amount = floatval($betItem['amount'] ?? 0);
 
-            Db::startTrans();
-            try {
-                // 扣除用户余额
-                UserBalance::subUserBalance(
-                    $this->user['id'],
-                    $amount,
-                    'game_bet',
-                    'Canada28 bet - ' . $betType['type_name'] . ' - period number:' . $currentDraw['period_number'],
-                    $currentDraw['period_number']
-                );
+                // 参数验证
+                if ($betTypeId <= 0) {
+                    throw new \Exception('please select bet type');
+                }
 
-                // 创建投注记录
-                $bet = Canada28Bets::createBet([
-                    'merchant_id' => $this->user['merchant_id'],
-                    'user_id' => $this->user['uuid'],
-                    'period_number' => $currentDraw['period_number'],
-                    'bet_type' => $betType['type_key'],
-                    'bet_name' => $betType['type_name'],
-                    'amount' => $amount,
-                    'multiplier' => $betType['odds'],
-                    'status' => 'pending',
-                    'ip' => request()->ip()
-                ]);
+                if ($amount <= 0) {
+                    throw new \Exception('bet amount must be greater than 0');
+                }
 
-                Db::commit();
-            } catch (\Exception $e) {
-                Db::rollback();
-                throw $e;
+                // 获取投注类型配置
+                $betType = Canada28BetTypes::where('id', $betTypeId)
+                    ->field('id,type_key,type_name,odds,status')
+                    ->where('merchant_id', $this->user['merchant_id'])
+                    ->where('status', 1)
+                    ->find();
+
+                if (!$betType) {
+                    throw new \Exception('bet type not found or disabled');
+                }
+
+                // 查找当前可投注的期数（status=0）
+                $currentDraw = Canada28Draws::where('status', Canada28Draws::STATUS_WAITING)
+                    ->field('id,period_number,status,end_at')
+                    ->where('end_at', '>', date('Y-m-d H:i:s', time() + 30))
+                    ->order('period_number desc')
+                    ->find();
+
+                if (!$currentDraw) {
+                    throw new \Exception('no available bet period');
+                }
+
+                // 检查是否在开奖前30秒内（锁定投注）
+                $lockTime = strtotime($currentDraw['end_at']) - 30; // 开奖前30秒
+                if (time() >= $lockTime) {
+                    throw new \Exception('betting is closed 30 seconds before the draw');
+                }
+
+                // 检查用户余额
+                if ($this->user['balance'] < $amount) {
+                    throw new \Exception('insufficient balance');
+                }
+
+                Db::startTrans();
+                try {
+
+                    // 创建投注记录
+                    $bet = Canada28Bets::createBet([
+                        'merchant_id' => $this->user['merchant_id'],
+                        'user_id' => $this->user['uuid'],
+                        'period_number' => $currentDraw['period_number'],
+                        'bet_type' => $betType['type_key'],
+                        'bet_name' => $betType['type_name'],
+                        'amount' => $amount,
+                        'multiplier' => $betType['odds'],
+                        'status' => 'pending',
+                        'ip' => request()->ip()
+                    ]);
+
+                    // 扣除用户余额
+                    UserBalance::subUserBalance(
+                        $this->user['id'],
+                        $amount,
+                        'game_bet',
+                        'Canada28 bet - ' . $betType['type_name'] . ' - period number:' . $currentDraw['period_number'],
+                        $bet->id
+                    );
+                    postData("http://127.0.0.1:8000/v1/game_api/canada28/bet", ['bet_type' => $betType['type_name'], 'bet_amount' => $amount, 'user_id' => $this->user['uuid'], 'username' => $this->user['nickname'], 'avatar' => $this->user['avatar']]);
+                    Db::commit();
+                } catch (\Exception $e) {
+                    Db::rollback();
+                    throw $e;
+                }
             }
         } catch (\Exception $e) {
             return $this->error('bet failed: ' . $e->getMessage());
@@ -433,15 +445,8 @@ class Game extends Controller
             Cache::store('redis')->handler()->del($lockKey);
         }
         // 发送信息
-        postData("http://127.0.0.1:8000/v1/game_api/canada28/bet", ['bet_type' => $betType['type_name'], 'bet_amount' => $amount, 'user_id' => $this->user['uuid'], 'username' => $this->user['nickname'], 'avatar' => $this->user['avatar']]);
         // 返回投注成功信息
         return $this->success([
-            'bet_id' => $bet['id'],
-            'period_number' => $currentDraw['period_number'],
-            'bet_type' => $betType['type_name'],
-            'amount' => $amount,
-            'multiplier' => $betType['odds'],
-            'potential_win' => $amount * $betType['odds'],
             'message' => 'bet success! period number: ' . $currentDraw['period_number']
         ]);
     }
