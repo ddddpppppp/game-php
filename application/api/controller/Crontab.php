@@ -81,13 +81,20 @@ class Crontab extends Controller
     {
         // 查找当前可投注的期数（status=0）
         $currentDraw = Canada28Draws::where('status', Canada28Draws::STATUS_WAITING)
-            ->field('id,period_number,status,end_at')
+            ->field('id,period_number,status,end_at,start_at')
             ->where('end_at', '>', date('Y-m-d H:i:s', time() + 30))
             ->order('period_number desc')
             ->find();
 
         if (!$currentDraw) {
             echo date('Y-m-d H:i:s') . ' - No available bet period' . PHP_EOL;
+            return;
+        }
+
+        // 检查是否在开始后15秒内（延迟投注）
+        $startDelayTime = strtotime($currentDraw['start_at']) + 15; // 开始后15秒
+        if (time() < $startDelayTime) {
+            echo date('Y-m-d H:i:s') . ' - Waiting 15 seconds after start time before betting' . PHP_EOL;
             return;
         }
 
