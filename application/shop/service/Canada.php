@@ -225,10 +225,14 @@ class Canada
 
         $financeStats = [];
         $totalStats = [
+            'register_count' => 0,
             'deposit_count' => 0,
             'deposit_amount' => 0,
+            'deposit_user_count' => 0,
+            'gift_amount' => 0,
             'withdraw_count' => 0,
             'withdraw_amount' => 0,
+            'withdraw_user_count' => 0,
             'channel_fee_rate' => 0,
             'gateway_fee' => 0,
             'total_channel_fee' => 0,
@@ -236,6 +240,13 @@ class Canada
             'user_balances' => 0,
             'profit' => 0
         ];
+
+        // 计算总注册人数（只统计真实用户，不按渠道分组）
+        $totalRegisterCount = Db::table('game_users')
+            ->where('type', 'user') // 只统计真实用户
+            ->where('created_at', 'between', [$startDate, $endDate])
+            ->where('deleted_at', null)
+            ->count();
 
         foreach ($channelTypes as $channelType) {
             // 获取该类型的充值渠道信息
@@ -256,33 +267,42 @@ class Canada
                 continue;
             }
 
-            // 充值统计 - 关联充值渠道表
+            // 充值统计 - 关联充值渠道表，只统计真实用户
             $depositStats = Db::table('game_transactions')
                 ->alias('t')
                 ->leftJoin('game_payment_channel c', 't.channel_id = c.id')
+                ->leftJoin('game_users u', 't.user_id = u.id')
                 ->where('t.type', 'deposit')
                 ->where('t.status', 'completed')
                 ->where('c.type', $channelType)
+                ->where('u.type', 'user') // 只统计真实用户
                 ->where('t.created_at', 'between', [$startDate, $endDate])
                 ->where('t.deleted_at', null)
+                ->where('u.deleted_at', null)
                 ->field([
                     'COUNT(*) as count',
+                    'COUNT(DISTINCT t.user_id) as user_count',
                     'SUM(t.actual_amount) as total_amount',
+                    'SUM(t.gift) as total_gift',
                     'SUM(t.actual_amount * (c.rate / 100)) as total_rate_fee',
                     'COUNT(*) * AVG(c.charge_fee) as total_charge_fee'
                 ])
                 ->find();
 
-            // 提现统计 - 关联提现渠道表
+            // 提现统计 - 关联提现渠道表，只统计真实用户
             $withdrawStats = Db::table('game_transactions')
                 ->alias('t')
                 ->leftJoin('game_withdraw_channel c', 't.channel_id = c.id')
+                ->leftJoin('game_users u', 't.user_id = u.id')
                 ->where('t.type', 'withdraw')
                 ->where('c.type', $channelType)
+                ->where('u.type', 'user') // 只统计真实用户
                 ->where('t.created_at', 'between', [$startDate, $endDate])
                 ->where('t.deleted_at', null)
+                ->where('u.deleted_at', null)
                 ->field([
                     'COUNT(*) as count',
+                    'COUNT(DISTINCT t.user_id) as user_count',
                     'SUM(t.amount) as total_amount',
                     'SUM(t.fee) as total_fee'
                 ])
@@ -290,8 +310,11 @@ class Canada
 
             // 计算各项数据
             $depositCount = intval($depositStats['count'] ?? 0);
+            $depositUserCount = intval($depositStats['user_count'] ?? 0);
             $depositAmount = floatval($depositStats['total_amount'] ?? 0);
+            $giftAmount = floatval($depositStats['total_gift'] ?? 0);
             $withdrawCount = intval($withdrawStats['count'] ?? 0);
+            $withdrawUserCount = intval($withdrawStats['user_count'] ?? 0);
             $withdrawAmount = floatval($withdrawStats['total_amount'] ?? 0);
             $withdrawFee = floatval($withdrawStats['total_fee'] ?? 0);
 
@@ -308,9 +331,13 @@ class Canada
             $stats = [
                 'channel_name' => strtoupper($channelType),
                 'channel_type' => $channelType,
+                'register_count' => '--', // 渠道行不显示注册人数
                 'deposit_count' => $depositCount,
+                'deposit_user_count' => $depositUserCount,
                 'deposit_amount' => number_format($depositAmount, 2),
+                'gift_amount' => number_format($giftAmount, 2),
                 'withdraw_count' => $withdrawCount,
+                'withdraw_user_count' => $withdrawUserCount,
                 'withdraw_amount' => number_format($withdrawAmount, 2),
                 'channel_fee_rate' => number_format($channelFeeRate, 2),
                 'gateway_fee' => number_format($gatewayFee, 2),
@@ -325,8 +352,11 @@ class Canada
 
             // 累计总计
             $totalStats['deposit_count'] += $depositCount;
+            $totalStats['deposit_user_count'] += $depositUserCount;
             $totalStats['deposit_amount'] += $depositAmount;
+            $totalStats['gift_amount'] += $giftAmount;
             $totalStats['withdraw_count'] += $withdrawCount;
+            $totalStats['withdraw_user_count'] += $withdrawUserCount;
             $totalStats['withdraw_amount'] += $withdrawAmount;
             $totalStats['channel_fee_rate'] += $channelFeeRate;
             $totalStats['gateway_fee'] += $gatewayFee;
@@ -335,7 +365,7 @@ class Canada
             $totalStats['profit'] += $profit;
         }
 
-        // 计算总的未下分金额：充值+充值赠送+赠送+赢钱-提现-下注
+        // 计算总的未下分金额：充值+充值赠送+赠送+赢钱-提现-下注（只统计真实用户）
         $totalUserBalances = self::calculateTotalUserBalances($startDate, $endDate);
 
         // 格式化总计数据
@@ -344,9 +374,13 @@ class Canada
             'channel_type' => '-',
             'rate' => '-',
             'charge_fee' => '-',
+            'register_count' => $totalRegisterCount,
             'deposit_count' => $totalStats['deposit_count'],
+            'deposit_user_count' => $totalStats['deposit_user_count'],
             'deposit_amount' => number_format($totalStats['deposit_amount'], 2),
+            'gift_amount' => number_format($totalStats['gift_amount'], 2),
             'withdraw_count' => $totalStats['withdraw_count'],
+            'withdraw_user_count' => $totalStats['withdraw_user_count'],
             'withdraw_amount' => number_format($totalStats['withdraw_amount'], 2),
             'channel_fee_rate' => number_format($totalStats['channel_fee_rate'], 2),
             'gateway_fee' => number_format($totalStats['gateway_fee'], 2),
@@ -364,45 +398,69 @@ class Canada
     }
 
     /**
-     * 计算总的未下分金额：充值+充值赠送+赠送+赢钱-提现-下注
+     * 计算总的未下分金额：充值+充值赠送+赠送+赢钱-提现-下注（只统计真实用户）
      */
     private static function calculateTotalUserBalances($startDate, $endDate)
     {
-        // 计算充值金额
+        // 计算充值金额（只统计真实用户）
         $depositAmount = Db::table('game_user_balances')
-            ->where('created_at', 'between', [$startDate, $endDate])
-            ->where('type', 'deposit')
-            ->sum('amount');
+            ->alias('b')
+            ->leftJoin('game_users u', 'b.user_id = u.id')
+            ->where('b.created_at', 'between', [$startDate, $endDate])
+            ->where('b.type', 'deposit')
+            ->where('u.type', 'user') // 只统计真实用户
+            ->where('u.deleted_at', null)
+            ->sum('b.amount');
 
-        // 计算充值赠送金额
+        // 计算充值赠送金额（只统计真实用户）
         $depositGiftAmount = Db::table('game_user_balances')
-            ->where('created_at', 'between', [$startDate, $endDate])
-            ->where('type', 'deposit_gift')
-            ->sum('amount');
+            ->alias('b')
+            ->leftJoin('game_users u', 'b.user_id = u.id')
+            ->where('b.created_at', 'between', [$startDate, $endDate])
+            ->where('b.type', 'deposit_gift')
+            ->where('u.type', 'user') // 只统计真实用户
+            ->where('u.deleted_at', null)
+            ->sum('b.amount');
 
-        // 计算赠送金额
+        // 计算赠送金额（只统计真实用户）
         $giftAmount = Db::table('game_user_balances')
-            ->where('created_at', 'between', [$startDate, $endDate])
-            ->where('type', 'gift')
-            ->sum('amount');
+            ->alias('b')
+            ->leftJoin('game_users u', 'b.user_id = u.id')
+            ->where('b.created_at', 'between', [$startDate, $endDate])
+            ->where('b.type', 'gift')
+            ->where('u.type', 'user') // 只统计真实用户
+            ->where('u.deleted_at', null)
+            ->sum('b.amount');
 
-        // 计算赢钱金额（游戏收益）
+        // 计算赢钱金额（游戏收益）（只统计真实用户）
         $winAmount = Db::table('game_user_balances')
-            ->where('created_at', 'between', [$startDate, $endDate])
-            ->where('type', 'game_win')
-            ->sum('amount');
+            ->alias('b')
+            ->leftJoin('game_users u', 'b.user_id = u.id')
+            ->where('b.created_at', 'between', [$startDate, $endDate])
+            ->where('b.type', 'game_win')
+            ->where('u.type', 'user') // 只统计真实用户
+            ->where('u.deleted_at', null)
+            ->sum('b.amount');
 
-        // 计算投注金额（负数）
+        // 计算投注金额（负数）（只统计真实用户）
         $betAmount = Db::table('game_user_balances')
-            ->where('created_at', 'between', [$startDate, $endDate])
-            ->where('type', 'game_bet')
-            ->sum('amount');
+            ->alias('b')
+            ->leftJoin('game_users u', 'b.user_id = u.id')
+            ->where('b.created_at', 'between', [$startDate, $endDate])
+            ->where('b.type', 'game_bet')
+            ->where('u.type', 'user') // 只统计真实用户
+            ->where('u.deleted_at', null)
+            ->sum('b.amount');
 
-        // 计算提现金额（负数）
+        // 计算提现金额（负数）（只统计真实用户）
         $withdrawAmount = Db::table('game_user_balances')
-            ->where('created_at', 'between', [$startDate, $endDate])
-            ->where('type', 'withdraw')
-            ->sum('amount');
+            ->alias('b')
+            ->leftJoin('game_users u', 'b.user_id = u.id')
+            ->where('b.created_at', 'between', [$startDate, $endDate])
+            ->where('b.type', 'withdraw')
+            ->where('u.type', 'user') // 只统计真实用户
+            ->where('u.deleted_at', null)
+            ->sum('b.amount');
 
         // 未下分 = 充值 + 充值赠送 + 赠送 + 赢钱 - 提现 - 下注
         // 注意：投注和提现在余额表中通常是负数，所以这里用加法（因为已经是负数）

@@ -412,6 +412,7 @@ class User extends Controller
                 $userList = ArrayHelper::setKey($userList, 'id');
                 foreach ($list as &$item) {
                     $item['user'] = $userList[$item['user_id']] ?? [];
+                    $item['created_at'] = TimeHelper::convertFromUTC($item['created_at']);
                 }
                 unset($item);
             }
@@ -576,6 +577,8 @@ class User extends Controller
                     if (isset($item['user']['ip'])) {
                         $item['ip_count'] = $ipCounts[$item['user']['ip']] ?? 0;
                     }
+                    $item['created_at'] = TimeHelper::convertFromUTC($item['created_at']);
+                    $item['completed_at'] = TimeHelper::convertFromUTC($item['completed_at']);
                 }
                 unset($item);
             }
