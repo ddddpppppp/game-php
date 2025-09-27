@@ -81,7 +81,7 @@ class Usdt
 
             return [0, '等待支付确认'];
         } catch (\Exception $e) {
-            Log::error('检查充值状态失败: ' . $e->getMessage());
+            log_data('usdt', '检查充值状态失败: ' . $e->getMessage());
             return [0, '检查失败: ' . $e->getMessage()];
         }
     }
@@ -103,7 +103,7 @@ class Usdt
             // 获取最新的区块号
             $latestBlock = self::getLatestBlockNumber();
             if (!$latestBlock) {
-                Log::warning('无法获取最新区块号');
+                log_data('usdt', '无法获取最新区块号', 'warning');
                 return [false, '', 0];
             }
 
@@ -128,7 +128,7 @@ class Usdt
             $response = self::sendRequest($url);
 
             if (!$response || $response['status'] !== '1' || !isset($response['result'])) {
-                Log::warning('Etherscan API返回异常: ' . json_encode($response));
+                log_data('usdt', 'Etherscan API返回异常: ' . json_encode($response), 'warning');
                 return [false, '', 0];
             }
 
@@ -156,7 +156,7 @@ class Usdt
 
             return [false, '', 0];
         } catch (\Exception $e) {
-            Log::error('检查USDT支付失败: ' . $e->getMessage());
+            log_data('usdt', '检查USDT支付失败: ' . $e->getMessage(), 'error');
             return [false, '', 0];
         }
     }
@@ -181,7 +181,7 @@ class Usdt
             // 将十六进制转换为十进制
             return hexdec($response['result']);
         } catch (\Exception $e) {
-            Log::error('获取最新区块号失败: ' . $e->getMessage());
+            log_data('usdt', '获取最新区块号失败: ' . $e->getMessage(), 'error');
             return false;
         }
     }
@@ -210,18 +210,18 @@ class Usdt
         curl_close($ch);
 
         if ($error) {
-            Log::error('CURL请求失败: ' . $error);
+            log_data('usdt', 'CURL请求失败: ' . $error, 'error');
             return false;
         }
 
         if ($httpCode !== 200) {
-            Log::error('HTTP请求失败，状态码: ' . $httpCode);
+            log_data('usdt', 'HTTP请求失败，状态码: ' . $httpCode, 'error');
             return false;
         }
 
         $data = json_decode($response, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            Log::error('JSON解析失败: ' . json_last_error_msg());
+            log_data('usdt', 'JSON解析失败: ' . json_last_error_msg(), 'error');
             return false;
         }
 

@@ -2,29 +2,34 @@
 
 namespace app\common\helper;
 
+use app\common\enum\Bot;
+use app\common\helper\TgHelper;
+
 class LongPay
 {
 
+    private $url = 'https://qilinpay.us/api/pay/create';
     private $mid = '100000000000000';
     private $tid = '100000000000000';
-    private $tidKey = '100000000000000';
+    private $appKey = '100000000000000';
     private $version = 'V1.0';
     private $paymentType = 'CASHAPP';
-    private $transId = '38';
+    private $transId = '39';
     private $signType = 'MD5';
     private $billCountryCode = 'US';
 
 
     public function __construct($params)
     {
+        $this->url = $params['url'] ?? $this->url;
         $this->mid = $params['mid'];
         $this->tid = $params['tid'];
-        $this->tidKey = $params['tidKey'];
+        $this->appKey = $params['appKey'] ?? $params['tidKey']; // 兼容旧参数名
     }
 
     public function createOrder($orderNo, $amount, $currency = 'USD', $clientIp = '', $shopUrl = '', $returnUrl = '')
     {
-        $url = 'https://qilinpay.us/api/pay/create';
+        $url = $this->url;
         $params = [];
         $params['reference_id'] = $orderNo;
         $params['version'] = $this->version;
@@ -38,14 +43,13 @@ class LongPay
         $params['amount'] = strval($amount);
         $params['currencyCode'] = $currency;
         $params['notifyUrl'] = SITE_ROOT . '/api/notify/longpay';
-        $params['returnUrl'] = $returnUrl ?: url('/api/notify/successCommonReturn', [], false, true);
+        $params['returnUrl'] = $returnUrl ?: url('/api/notify/payReturn', [], false, true);
         $params['shopUrl'] = $shopUrl;
         $params['ipAddress'] = $clientIp;
         $params['billCountryCode'] = $this->billCountryCode;
         $params['remark'] = 'remark';
         $params['signature'] = $this->getSignature($params);
-        $reuslt = postData($url, $params, ["Content-Type: application/x-www-form-urlencoded"], true);
-        dd($params, $reuslt);
+        $result = postData($url, $params, ["Content-Type: application/x-www-form-urlencoded"], true);
         if (empty($result)) {
             return [-1, '请求失败'];
         }
@@ -57,14 +61,95 @@ class LongPay
         return [1, $result['redirectUrl']];
     }
 
+    /**
+     * 创建提现订单
+     * @param string $orderNo 订单号
+     * @param string $account 账户
+     * @param int $amount 金额(分为单位)
+     * @param string $ip IP地址
+     * @return array [payId, error]
+     */
+    public function createWithdrawOrder($orderNo, $account, $amount, $ip = '')
+    {
+        if ($amount < 10) {
+            return ['', '金额必须大于10分'];
+        }
+        if ($ip == '') {
+            $ip = ServerHelper::getServerIp();
+        }
+
+        $params = [
+            'reference_id' => $orderNo,
+            'version' => $this->version,
+            'amount' => sprintf('%.2f', $amount), // 分转元，保留两位小数
+            'paymenttype' => 'CASHAPPOUT',
+            'transId' => $this->transId,
+            'signType' => $this->signType,
+            'mid' => $this->mid,
+            'tid' => $this->tid,
+            'timestamp' => time() * 1000, // 毫秒时间戳
+            'orderId' => $orderNo,
+            'buyerTag' => $account,
+            'currencyCode' => 'USD',
+            'notifyUrl' => 'https://php.game-hub.cc/api/notify/longWithdraw',
+            'shopUrl' => 'https://php.game-hub.cc',
+            'ipAddress' => $ip,
+            'billCountryCode' => $this->billCountryCode,
+            'check' => '0',
+        ];
+
+        $params['signature'] = $this->getSignature($params);
+        $result = postData($this->url, $params, ["Content-Type: application/x-www-form-urlencoded"], true);
+
+        if (empty($result)) {
+            return ['', '请求失败'];
+        }
+
+        $result = json_decode($result, true);
+        if ($result['respCode'] != '0000' && $result['respCode'] != 'P000') {
+            $errorMsg = $result['respDesc'] ?? $result['msg'] ?? $this->getErrorDesc($result['respCode']);
+            return ['', $errorMsg];
+        }
+
+        $payId = $result['reference_id'] ?? '';
+
+        TgHelper::sendMessage(Bot::PAYMENT_BOT_TOKEN, Bot::LONG_CHAT_ID, sprintf("⚠️提现订单创建成功 \n💵金额: %s ", $amount));
+        return [$payId, ''];
+    }
+
     private function getSignature($params)
     {
+        // 过滤空值
         $params = array_filter($params, function ($value) {
-            return !is_null($value);
+            return !is_null($value) && $value !== '';
         });
+
+        // 按键名ASCII顺序排序
         ksort($params);
-        $params = http_build_query($params);
-        return md5($params . $this->tidKey);
+
+        // 构建查询字符串，参考Go版本的 JoinStringsInASCII 方法
+        $str = $this->joinStringsInASCII($params);
+
+        // 添加appKey并生成MD5签名
+        $str .= '&' . $this->appKey;
+
+        return md5($str);
+    }
+
+    /**
+     * 按ASCII顺序连接参数，模拟Go版本的 utils.JoinStringsInASCII 方法
+     * @param array $params
+     * @return string
+     */
+    private function joinStringsInASCII($params)
+    {
+        $pairs = [];
+        foreach ($params as $key => $value) {
+            if ($value !== null && $value !== '') {
+                $pairs[] = $key . '=' . $value;
+            }
+        }
+        return implode('&', $pairs);
     }
 
     public function getErrorDesc($code)

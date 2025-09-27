@@ -9,7 +9,6 @@ use think\facade\Log;
 
 class UserBalance
 {
-
     /**
      * 增加用户余额并记录日志
      * @param int $userId 用户ID
@@ -123,7 +122,7 @@ class UserBalance
 
             // 增加用户余额
             self::addUserBalance($deposit->user_id, $deposit->amount, 'deposit', "USDT recharge received, amount: {$deposit->amount}", $deposit->id);
-            self::addUserBalance($deposit->user_id, $deposit->gift, 'deposit_gift', "USDT recharge received, gift amount: {$deposit->gift}", $deposit->id);
+            $deposit->gift > 0 && self::addUserBalance($deposit->user_id, $deposit->gift, 'deposit_gift', "USDT recharge received, gift amount: {$deposit->gift}", $deposit->id);
             Db::commit();
             Log::info("充值成功: 用户ID={$deposit->user_id}, 订单号={$deposit->order_no}, 金额={$deposit->amount}");
             return [1, '充值成功'];
@@ -132,5 +131,15 @@ class UserBalance
             Log::error('完成充值失败: ' . $e->getMessage());
             return [0, '充值处理失败: ' . $e->getMessage()];
         }
+    }
+
+
+    /**
+     * 提现退款
+     */
+    public static function refundWithdraw($withdraw)
+    {
+        // 增加用户余额
+        self::addUserBalance($withdraw->user_id, $withdraw->amount, 'withdraw_failed_refund', "withdraw failed refund, amount: {$withdraw->amount}", $withdraw->id);
     }
 }

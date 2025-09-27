@@ -57,4 +57,24 @@ class Transactions extends BaseModel
 
     // 只读字段
     protected $readonly = ['id'];
+
+    public function getStatusText()
+    {
+        return [
+            'pending' => '待处理',
+            'completed' => '成功',
+            'failed' => '失败',
+            'expired' => '过期',
+        ];
+    }
+
+    public function getStatusColor()
+    {
+        return [
+            'pending' => 'info',
+            'completed' => 'success',
+            'failed' => 'danger',
+            'expired' => 'info',
+        ];
+    }
 }

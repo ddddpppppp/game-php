@@ -52,14 +52,14 @@ class Canada
         $realProfit = $depositAmount - $withdrawAmount + $withdrawFee - $depositChannelFee;
 
         return [
-            'depositAmount' => $depositAmount,
+            'depositAmount' => number_format($depositAmount, 2),
             'depositCount' => intval($depositStats['total_count'] ?? 0),
-            'withdrawAmount' => $withdrawAmount,
+            'withdrawAmount' => number_format($withdrawAmount, 2),
             'withdrawCount' => intval($withdrawStats['total_count'] ?? 0),
-            'depositChannelFee' => $depositChannelFee,
-            'withdrawFee' => $withdrawFee,
-            'grossProfit' => $grossProfit,
-            'realProfit' => $realProfit,
+            'depositChannelFee' => number_format($depositChannelFee, 2),
+            'withdrawFee' => number_format($withdrawFee, 2),
+            'grossProfit' => number_format($grossProfit, 2),
+            'realProfit' => number_format($realProfit, 2),
         ];
     }
 
@@ -267,8 +267,8 @@ class Canada
                 ->where('t.deleted_at', null)
                 ->field([
                     'COUNT(*) as count',
-                    'SUM(t.amount) as total_amount',
-                    'SUM(t.amount * (c.rate / 100)) as total_rate_fee',
+                    'SUM(t.actual_amount) as total_amount',
+                    'SUM(t.actual_amount * (c.rate / 100)) as total_rate_fee',
                     'COUNT(*) * AVG(c.charge_fee) as total_charge_fee'
                 ])
                 ->find();

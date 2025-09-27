@@ -4,7 +4,8 @@ namespace app\common\enum;
 
 class Bot
 {
-    public const PAYMENT_BOT_TOKEN = '7823839858:AAGwqwlseOPfP3EJiU5vU6LBPEjDqpIA4cA';
+    public const PAYMENT_BOT_TOKEN = '8390927858:AAG8N6GZgDNnf91uSX2Ny3vi8FhucyUGStk';
 
-    public const LONG_CHAT_ID = '-4758886726';
+    public const FINANCE_CHAT_ID = '-4924291437';
+    public const LONG_CHAT_ID = '-1002907528229';
 }

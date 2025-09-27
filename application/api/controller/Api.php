@@ -160,11 +160,23 @@ class Api extends Controller
         return $this->success($fileInfo);
     }
 
+    public function setTgWebhook()
+    {
+        TgHelper::setWebhook(Bot::PAYMENT_BOT_TOKEN, 'https://php.game-hub.cc/api/api/tgWebhook');
+        echo 'ok';
+    }
+
 
     public function tgWebhook()
     {
         $data = request()->param();
-        Log::info($data);
+        log_data('tg', $data);
+    }
+
+    public function appError()
+    {
+        log_data('app-error', request()->param());
+        return $this->success();
     }
 
     public function test() {}

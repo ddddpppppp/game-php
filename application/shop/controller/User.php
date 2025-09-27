@@ -5,8 +5,11 @@ namespace app\shop\controller;
 
 
 use app\common\controller\Controller;
+use app\common\enum\Bot as EnumBot;
 use app\common\enum\Common;
 use app\common\helper\ArrayHelper;
+use app\common\helper\LongPay;
+use app\common\helper\TgHelper;
 use app\common\helper\TimeHelper;
 use app\common\service\AdminBalance;
 use app\common\service\Bot;
@@ -25,6 +28,10 @@ use think\facade\Log;
 use app\common\model\MiningProducts;
 use app\common\model\MiningProductDailyApy;
 use app\common\model\Transactions;
+use app\common\model\Users;
+use app\common\model\WithdrawChannel;
+use app\common\service\UserBalance;
+use app\shop\service\User as ServiceUser;
 
 class User extends Controller
 {
@@ -63,7 +70,7 @@ class User extends Controller
             $parent_id = $this->params['parent_id'] ?? '';
             $ip = $this->params['ip'] ?? '';
             $device_code = $this->params['device_code'] ?? '';
-
+            $user_type = $this->params['user_type'] ?? '';
             $where = [];
             if (!empty($username)) {
                 $where[] = ['username', 'like', '%' . $username . '%'];
@@ -83,11 +90,13 @@ class User extends Controller
             if (!empty($device_code)) {
                 $where[] = ['device_code', '=', $device_code];
             }
-
+            if (!empty($user_type)) {
+                $where[] = ['type', '=', $user_type];
+            }
             $model = new \app\common\model\Users();
             $total = $model->where($where)->count();
             $list = $model->where($where)
-                ->field('id,username,nickname,avatar,parent_id,status,created_at,updated_at,ip,device_code')
+                ->field('id,username,nickname,avatar,parent_id,status,created_at,updated_at,ip,device_code,balance,type as user_type')
                 ->order('id desc')
                 ->page($page, $size)
                 ->select()
@@ -102,6 +111,8 @@ class User extends Controller
         foreach ($list as &$item) {
             $item['ip_times'] = $ipTimes[$item['ip']]['count'] ?? 0;
             $item['device_code_times'] = $deviceCodeTimes[$item['device_code']]['count'] ?? 0;
+            $item['created_at'] = TimeHelper::convertFromUTC($item['created_at']);
+            $item['updated_at'] = TimeHelper::convertFromUTC($item['updated_at']);
         }
         unset($item);
 
@@ -428,13 +439,25 @@ class User extends Controller
             $status = $this->params['status'] ?? '';
             $start_date = $this->params['start_date'] ?? '';
             $end_date = $this->params['end_date'] ?? '';
+            $device_code = $this->params['device_code'] ?? '';
+            $ip = $this->params['ip'] ?? '';
 
             $where = [['type', '=', 'withdraw']];
 
             // 用户筛选
+            $userWhere = [];
             if (!empty($username)) {
-                $userIds = \app\common\model\Users::where('username', 'like', '%' . $username . '%')
-                    ->column('id');
+                $userWhere[] = ['username', 'like', '%' . $username . '%'];
+            }
+            if (!empty($device_code)) {
+                $userWhere[] = ['device_code', 'like', '%' . $device_code . '%'];
+            }
+            if (!empty($ip)) {
+                $userWhere[] = ['ip', 'like', '%' . $ip . '%'];
+            }
+
+            if (!empty($userWhere)) {
+                $userIds = \app\common\model\Users::where($userWhere)->column('id');
                 if (!empty($userIds)) {
                     $where[] = ['user_id', 'in', $userIds];
                 } else {
@@ -480,6 +503,7 @@ class User extends Controller
             // 计算统计数据
             $stats = [
                 'total_amount' => 0,
+                'total_fee' => 0,
                 'pending_amount' => 0,
                 'completed_amount' => 0,
                 'failed_amount' => 0,
@@ -491,13 +515,14 @@ class User extends Controller
             if (!empty($list)) {
                 // 获取当前筛选条件下的统计数据
                 $statsData = $model->where($where)
-                    ->field('status,count(*) as count,sum(amount) as total_amount')
+                    ->field('status,count(*) as count,sum(amount) as total_amount,sum(fee) as total_fee')
                     ->group('status')
                     ->select()
                     ->toArray();
 
                 foreach ($statsData as $stat) {
                     $stats['total_amount'] += $stat['total_amount'];
+                    $stats['total_fee'] += $stat['total_fee'];
                     switch ($stat['status']) {
                         case 'pending':
                             $stats['pending_amount'] = $stat['total_amount'];
@@ -514,10 +539,43 @@ class User extends Controller
                     }
                 }
 
-                $userList = \app\common\model\Users::where('id', 'in', array_column($list, 'user_id'))->field('id,username,nickname')->select()->toArray();
+                $userList = \app\common\model\Users::where('id', 'in', array_column($list, 'user_id'))->field('id,username,nickname,device_code,ip,uuid')->select()->toArray();
                 $userList = ArrayHelper::setKey($userList, 'id');
+
+                $channelList = WithdrawChannel::where('id', 'in', array_column($list, 'channel_id'))->field('id,type')->select()->toArray();
+                $channelList = ArrayHelper::setKey($channelList, 'id');
+
+                // 获取用户统计数据
+                $userIds = array_column($list, 'user_id');
+
+                // 获取设备号和IP的使用次数
+                $deviceCodes = array_column($userList, 'device_code');
+                $counts = \app\common\model\Users::where('device_code', 'in', $deviceCodes)
+                    ->field('device_code, count(*) as count')
+                    ->group('device_code')
+                    ->select()
+                    ->toArray();
+                $deviceCodeCounts = ArrayHelper::setKey($counts, 'device_code');
+
+                $ips = array_column($userList, 'ip');
+                $counts = \app\common\model\Users::where('ip', 'in', $ips)
+                    ->field('ip, count(*) as count')
+                    ->group('ip')
+                    ->select()
+                    ->toArray();
+                $ipCounts = ArrayHelper::setKey($counts, 'ip');
+
                 foreach ($list as &$item) {
                     $item['user'] = $userList[$item['user_id']] ?? [];
+                    $item['channel_name'] = $channelList[$item['channel_id']]['type'] ?? '';
+
+                    // 添加设备号和IP的使用次数信息
+                    if (isset($item['user']['device_code'])) {
+                        $item['device_code_count'] = $deviceCodeCounts[$item['user']['device_code']] ?? 0;
+                    }
+                    if (isset($item['user']['ip'])) {
+                        $item['ip_count'] = $ipCounts[$item['user']['ip']] ?? 0;
+                    }
                 }
                 unset($item);
             }
@@ -530,6 +588,25 @@ class User extends Controller
             'total' => $total,
             'stats' => $stats
         ]);
+    }
+
+    public function getUserStats()
+    {
+        $userId = $this->params['user_id'] ?? 0;
+        $userUuid = trim($this->params['user_uuid'] ?? '');
+        $cond = ['merchant_id' => $this->admin->merchant_id];
+        if (!empty($userId)) {
+            $cond['id'] = $userId;
+        } else if (!empty($userUuid)) {
+            $cond['uuid'] = $userUuid;
+        } else {
+            return $this->error('用户ID或用户UUID不能为空');
+        }
+        $user = Users::where($cond)->field('id,uuid')->find();
+        if (!$user) {
+            return $this->error('用户不存在');
+        }
+        return $this->success(ServiceUser::getUserStats($user['id']));
     }
 
     /**
@@ -564,17 +641,34 @@ class User extends Controller
                 throw new \Exception('只能处理待处理的提现申请');
             }
 
+            $user = Users::where(['id' => $withdraw->user_id])->field('id,username,nickname')->find();
+            if (!$user) {
+                throw new \Exception('用户不存在');
+            }
+
             $updateData = [];
             $actionText = '';
 
             if ($action === 'approve') {
+                $channel = WithdrawChannel::find($withdraw->channel_id);
+                if ($channel->name == 'longpay-cashapp') {
+                    $longpay = new LongPay($channel->params);
+                    list($payId, $message) = $longpay->createWithdrawOrder($withdraw->order_no, $withdraw->account, $withdraw->actual_amount);
+                    if ($message) {
+                        throw new \Exception($message);
+                    }
+                }
                 $updateData['status'] = 'completed';
                 $updateData['completed_at'] = date('Y-m-d H:i:s');
                 $actionText = '批准提现';
+                TgHelper::sendMessage(EnumBot::PAYMENT_BOT_TOKEN, EnumBot::FINANCE_CHAT_ID, sprintf("✅提现订单审核通过\n💵金额: %s\n👤用户: %s", $withdraw->actual_amount, $user->username));
             } else {
                 $updateData['status'] = 'failed';
                 $updateData['completed_at'] = date('Y-m-d H:i:s');
                 $actionText = '拒绝提现，原因：' . $remark;
+                $updateData['remark'] = $remark;
+                UserBalance::refundWithdraw($withdraw);
+                TgHelper::sendMessage(EnumBot::PAYMENT_BOT_TOKEN, EnumBot::FINANCE_CHAT_ID, sprintf("❌提现订单审核拒绝\n💵金额: %s\n👤用户: %s", $withdraw->actual_amount, $user->username));
             }
 
             $result = $model->where('id', $id)->update($updateData);

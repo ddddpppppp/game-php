@@ -422,7 +422,6 @@ class Game extends Controller
                         'status' => 'pending',
                         'ip' => request()->ip()
                     ]);
-
                     // 扣除用户余额
                     UserBalance::subUserBalance(
                         $this->user['id'],

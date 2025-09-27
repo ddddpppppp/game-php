@@ -167,6 +167,7 @@ CREATE TABLE IF NOT EXISTS `game_transactions` (
   `fee` decimal(15,4) NOT NULL DEFAULT '0.00' COMMENT '手续费',
   `gift` decimal(15,4) NOT NULL DEFAULT '0.00' COMMENT '赠送金额',
   `status` varchar(20) NOT NULL DEFAULT 'pending' COMMENT '状态: pending-待处理, completed-已完成, failed-失败, expired-已过期',
+  `remark` varchar(255) DEFAULT NULL COMMENT '备注',
   `created_at` datetime NOT NULL COMMENT '创建时间',
   `completed_at` datetime DEFAULT NULL COMMENT '完成时间',
   `expired_at` datetime DEFAULT NULL COMMENT '过期时间',
@@ -185,7 +186,7 @@ CREATE TABLE IF NOT EXISTS `game_transactions` (
 CREATE TABLE IF NOT EXISTS `game_user_balances` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
   `user_id` bigint(20) unsigned NOT NULL COMMENT '用户ID',
-  `type` varchar(20) NOT NULL COMMENT '变动类型：gift-赠送, deposit-充值, deposit_gift-充值赠送, withdraw-提现, game_bet-投注, game_win-收益',
+  `type` varchar(20) NOT NULL COMMENT '变动类型：gift-赠送, deposit-充值, deposit_gift-充值赠送, withdraw-提现, game_bet-投注, game_win-收益, withdraw_failed_refund-提现失败退款',
   `amount` decimal(15,2) NOT NULL COMMENT '变动金额',
   `balance_before` decimal(15,4) NOT NULL COMMENT '变动前余额',
   `balance_after` decimal(15,4) NOT NULL COMMENT '变动后余额',

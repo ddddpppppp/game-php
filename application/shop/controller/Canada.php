@@ -219,9 +219,8 @@ class Canada extends Controller
                     $statsMap[$periodNumber]['user_count'] = intval($stat['user_count']);
                     $statsMap[$periodNumber]['user_bet_count'] = intval($stat['bet_count']);
                     $statsMap[$periodNumber]['user_bet_amount'] = floatval($stat['total_bet_amount']);
+                    $statsMap[$periodNumber]['total_user_profit'] += floatval($stat['user_profit']);
                 }
-
-                $statsMap[$periodNumber]['total_user_profit'] += floatval($stat['user_profit']);
             }
 
             // 构建返回数据
@@ -239,8 +238,7 @@ class Canada extends Controller
                 ];
 
                 // 平台盈利 = 用户投注金额 - 用户盈利
-                $totalBetAmount = $stats['user_bet_amount'] + $stats['bot_bet_amount'];
-                $platformProfit = $totalBetAmount - $stats['total_user_profit'];
+                $platformProfit = $stats['user_bet_amount'] - $stats['total_user_profit'];
 
                 $list[] = [
                     'id' => $draw['id'],
@@ -279,111 +277,106 @@ class Canada extends Controller
      */
     public function getBetRecordsList()
     {
-        try {
-            $page = intval($this->params['page'] ?? 1);
-            $size = intval($this->params['size'] ?? 20);
-            $offset = ($page - 1) * $size;
+        $page = intval($this->params['page'] ?? 1);
+        $size = intval($this->params['size'] ?? 20);
+        $offset = ($page - 1) * $size;
 
-            // 搜索条件
-            $periodNumber = $this->params['period_number'] ?? '';
-            $username = $this->params['username'] ?? '';
-            $betType = $this->params['bet_type'] ?? '';
-            $status = $this->params['status'] ?? '';
-            $userType = $this->params['user_type'] ?? '';
-            $startDate = $this->params['start_date'] ?? '';
+        // 搜索条件
+        $periodNumber = $this->params['period_number'] ?? '';
+        $username = $this->params['username'] ?? '';
+        $betType = $this->params['bet_type'] ?? '';
+        $status = $this->params['status'] ?? '';
+        $userType = $this->params['user_type'] ?? '';
+        $startDate = $this->params['start_date'] ?? '';
 
-            // 构建查询条件
-            $where = [];
-            if (!empty($periodNumber)) {
-                $where[] = ['b.period_number', 'like', '%' . $periodNumber . '%'];
-            }
-            if (!empty($betType)) {
-                $where[] = ['b.bet_type', '=', $betType];
-            }
-            if ($status !== '') {
-                $where[] = ['b.status', '=', $status];
-            }
-            if (!empty($userType)) {
-                $where[] = ['u.type', '=', $userType];
-            }
-            if (!empty($username)) {
-                $where[] = ['u.username', 'like', '%' . $username . '%'];
-            }
-            if (!empty($startDate)) {
-                $where[] = ['b.created_at', '>=', TimeHelper::convertToUTC($startDate[0])];
-                $where[] = ['b.created_at', '<=', TimeHelper::convertToUTC($startDate[1])];
-            }
-
-            // 获取投注记录 - 使用JOIN避免循环查询
-            $query = \think\Db::table('game_canada28_bets')
-                ->alias('b')
-                ->leftJoin('game_users u', 'b.user_id = u.uuid')
-                ->leftJoin('game_canada28_draws d', 'b.period_number = d.period_number')
-                ->field([
-                    'b.*',
-                    'u.username',
-                    'u.nickname',
-                    'u.type as user_type',
-                    'd.result_numbers',
-                    'd.result_sum',
-                    'd.status as draw_status'
-                ])
-                ->where($where)
-                ->where('b.deleted_at', null)
-                ->order('b.created_at desc');
-
-            $total = $query->count();
-            $bets = $query->limit($offset, $size)->select();
-
-            if (empty($bets)) {
-                return $this->success([
-                    'list' => [],
-                    'total' => $total,
-                    'page' => $page,
-                    'size' => $size
-                ]);
-            }
-
-            // 构建返回数据
-            $list = [];
-            foreach ($bets as $bet) {
-                // 计算实际盈亏
-                $actualProfit = 0;
-                if ($bet['status'] === 'win') {
-                    $actualProfit = ($bet['amount'] * $bet['multiplier']) - $bet['amount'];
-                } elseif ($bet['status'] === 'lose') {
-                    $actualProfit = -$bet['amount'];
-                }
-
-                // 计算潜在赢利
-                $potentialWin = $bet['amount'] * $bet['multiplier'];
-
-                $list[] = [
-                    'id' => $bet['id'],
-                    'period_number' => $bet['period_number'],
-                    'username' => $bet['username'],
-                    'nickname' => $bet['nickname'],
-                    'user_type' => $bet['user_type'],
-                    'user_type_text' => $bet['user_type'] === 'bot' ? '机器人' : '真实用户',
-                    'bet_type' => $bet['bet_type'],
-                    'bet_name' => $bet['bet_name'],
-                    'amount' => number_format($bet['amount'], 2),
-                    'multiplier' => $bet['multiplier'],
-                    'potential_win' => number_format($potentialWin, 2),
-                    'status' => $bet['status'],
-                    'status_text' => Canada28Bets::getStatusCnText($bet['status']),
-                    'actual_profit' => number_format($actualProfit, 2),
-                    'result_numbers' => json_decode($bet['result_numbers'], true),
-                    'result_sum' => $bet['result_sum'],
-                    'draw_status' => $bet['draw_status'],
-                    'ip' => $bet['ip'],
-                    'created_at' => TimeHelper::convertFromUTC($bet['created_at']),
-                ];
-            }
-        } catch (\Exception $e) {
-            return $this->error('获取失败：' . $e->getMessage());
+        // 构建查询条件
+        $where = [];
+        if (!empty($periodNumber)) {
+            $where[] = ['b.period_number', 'like', '%' . $periodNumber . '%'];
+        }
+        if (!empty($betType)) {
+            $where[] = ['b.bet_type', '=', $betType];
+        }
+        if ($status !== '') {
+            $where[] = ['b.status', '=', $status];
+        }
+        if (!empty($userType)) {
+            $where[] = ['u.type', '=', $userType];
+        }
+        if (!empty($username)) {
+            $where[] = ['u.username', 'like', '%' . $username . '%'];
+        }
+        if (!empty($startDate)) {
+            $where[] = ['b.created_at', '>=', TimeHelper::convertToUTC($startDate[0])];
+            $where[] = ['b.created_at', '<=', TimeHelper::convertToUTC($startDate[1])];
         }
 
+        // 获取投注记录 - 使用JOIN避免循环查询
+        $query = \think\Db::table('game_canada28_bets')
+            ->alias('b')
+            ->leftJoin('game_users u', 'b.user_id = u.uuid')
+            ->leftJoin('game_canada28_draws d', 'b.period_number = d.period_number')
+            ->field([
+                'b.*',
+                'u.username',
+                'u.nickname',
+                'u.type as user_type',
+                'd.result_numbers',
+                'd.result_sum',
+                'd.status as draw_status'
+            ])
+            ->where($where)
+            ->where('b.deleted_at', null)
+            ->order('b.id desc');
+
+        $total = $query->count();
+        $bets = $query->limit($offset, $size)->select();
+
+        if (empty($bets)) {
+            return $this->success([
+                'list' => [],
+                'total' => $total,
+                'page' => $page,
+                'size' => $size
+            ]);
+        }
+
+        // 构建返回数据
+        $list = [];
+        foreach ($bets as $bet) {
+            // 计算实际盈亏
+            $actualProfit = 0;
+            if ($bet['status'] === 'win') {
+                $actualProfit = ($bet['amount'] * $bet['multiplier']) - $bet['amount'];
+            } elseif ($bet['status'] === 'lose') {
+                $actualProfit = -$bet['amount'];
+            }
+
+            // 计算潜在赢利
+            $potentialWin = $bet['amount'] * $bet['multiplier'];
+
+            $list[] = [
+                'id' => $bet['id'],
+                'period_number' => $bet['period_number'],
+                'username' => $bet['username'],
+                'nickname' => $bet['nickname'],
+                'user_type' => $bet['user_type'],
+                'user_type_text' => $bet['user_type'] === 'bot' ? '机器人' : '真实用户',
+                'bet_type' => $bet['bet_type'],
+                'bet_name' => $bet['bet_name'],
+                'amount' => number_format($bet['amount'], 2),
+                'multiplier' => $bet['multiplier'],
+                'potential_win' => number_format($potentialWin, 2),
+                'status' => $bet['status'],
+                'status_text' => Canada28Bets::getStatusCnText($bet['status']),
+                'actual_profit' => number_format($actualProfit, 2),
+                'result_numbers' => json_decode($bet['result_numbers'], true),
+                'result_sum' => $bet['result_sum'],
+                'draw_status' => $bet['draw_status'],
+                'ip' => $bet['ip'],
+                'created_at' => TimeHelper::convertFromUTC($bet['created_at']),
+            ];
+        }
         return $this->success([
             'list' => $list,
             'total' => $total,

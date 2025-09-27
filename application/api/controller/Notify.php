@@ -6,8 +6,11 @@ use app\api\enum\Order;
 use app\api\enum\Imap;
 use app\api\service\Usdt;
 use app\common\controller\Controller;
+use app\common\enum\Bot;
 use app\common\enum\RedisKey;
+use app\common\helper\TgHelper;
 use app\common\model\Transactions;
+use app\common\model\Users;
 use app\common\service\UserBalance;
 use think\Db;
 use think\facade\Cache;
@@ -46,13 +49,13 @@ class Notify extends Controller
                 ->find();
 
             if (!$order) {
-                Log::error("dfPay回调订单不存在: {$paymentNo}");
+                log_data('dfpay-notify', "dfPay回调订单不存在: {$paymentNo}");
                 throw new \Exception('订单不存在');
             }
 
             // 检查订单状态，防止重复回调
             if ($order->status == 'completed') {
-                Log::info("dfPay回调订单已完成: {$paymentNo}");
+                log_data('dfpay-notify', "dfPay回调订单已完成: {$paymentNo}");
                 throw new \Exception('订单已回调');
             }
 
@@ -75,10 +78,10 @@ class Notify extends Controller
                 }
 
                 Db::commit();
-                Log::info("Cashapp Online Deposit Success: 用户ID={$order->user_id}, 订单号={$paymentNo}, 金额={$order->amount}");
+                log_data('dfpay-notify', "Cashapp Online Deposit Success: 用户ID={$order->user_id}, 订单号={$paymentNo}, 金额={$order->amount}");
             } catch (\Exception $e) {
                 Db::rollback();
-                Log::error("Cashapp Online Deposit Failed: {$e->getMessage()}");
+                log_data('dfpay-notify', "Cashapp Online Deposit Failed: {$e->getMessage()}");
                 return $this->error('充值处理失败: ' . $e->getMessage(), 500);
             }
         } catch (\Exception $e) {
@@ -93,21 +96,21 @@ class Notify extends Controller
     public function freePayNotify()
     {
         try {
-            Log::info('freePay通知开始');
-            Log::info('请求参数: ' . json_encode(request()->param()));
-            Log::info('POST数据: ' . json_encode(request()->post()));
+            log_data('freepay-notify', 'freePay通知开始');
+            log_data('freepay-notify', '请求参数: ' . json_encode(request()->param()));
+            log_data('freepay-notify', 'POST数据: ' . json_encode(request()->post()));
 
             // 获取请求参数
             $params = request()->param();
-            $mchOrderNo = $params['MchOrderNo'] ?? '';
-            $state = $params['State'] ?? '';
-            $amount = $params['Amount'] ?? '';
-            $currency = $params['Currency'] ?? '';
-            $platOrderNo = $params['PlatOrderNo'] ?? '';
+            $mchOrderNo = $params['mchOrderNo'] ?? '';
+            $state = $params['state'] ?? '';
+            $amount = $params['amount'] ?? '';
+            $currency = $params['currency'] ?? '';
+            $platOrderNo = $params['platOrderNo'] ?? '';
 
             // 参数验证
             if (empty($mchOrderNo) || empty($state) || empty($amount) || empty($currency)) {
-                Log::error('freePay回调参数错误: ' . json_encode($params));
+                log_data('freepay-notify', 'freePay回调参数错误: ' . json_encode($params));
                 return $this->error('参数错误', 400);
             }
 
@@ -118,7 +121,7 @@ class Notify extends Controller
 
             // 尝试获取锁
             if (!Cache::store('redis')->set($lockKey, $lockValue, $lockTtl, ['nx'])) {
-                Log::warning("freePay回调正在处理中，订单号: {$mchOrderNo}");
+                log_data('freepay-notify', "freePay回调正在处理中，订单号: {$mchOrderNo}");
                 return $this->error('订单正在处理中', 423);
             }
 
@@ -131,19 +134,19 @@ class Notify extends Controller
                         ->find();
 
                     if (!$order) {
-                        Log::error("freePay回调订单不存在: {$mchOrderNo}");
+                        log_data('freepay-notify', "freePay回调订单不存在: {$mchOrderNo}");
                         throw new \Exception('订单不存在');
                     }
 
                     // 检查订单状态，防止重复回调
                     if ($order->status == 'completed') {
-                        Log::info("freePay回调订单已完成: {$mchOrderNo}");
+                        log_data('freepay-notify', "freePay回调订单已完成: {$mchOrderNo}");
                         throw new \Exception('订单已回调');
                     }
 
                     // 验证平台订单号（如果有的话）
                     if (!empty($platOrderNo) && isset($order->platform_order_no) && $order->platform_order_no != $platOrderNo) {
-                        Log::error("freePay回调订单号不匹配: 商户订单号={$mchOrderNo}, 平台订单号={$platOrderNo}");
+                        log_data('freepay-notify', "freePay回调订单号不匹配: 商户订单号={$mchOrderNo}, 平台订单号={$platOrderNo}");
                         throw new \Exception('订单号不符出错');
                     }
 
@@ -166,14 +169,14 @@ class Notify extends Controller
                         }
 
                         Db::commit();
-                        Log::info("freePay充值成功: 用户ID={$order->user_id}, 订单号={$mchOrderNo}, 金额={$order->amount}");
+                        log_data('freepay-notify', "freePay充值成功: 用户ID={$order->user_id}, 订单号={$mchOrderNo}, 金额={$order->amount}");
                     } catch (\Exception $e) {
                         Db::rollback();
-                        Log::error("freePay充值处理失败: {$e->getMessage()}");
+                        log_data('freepay-notify', "freePay充值处理失败: {$e->getMessage()}");
                         return $this->error('充值处理失败: ' . $e->getMessage(), 500);
                     }
                 } else {
-                    Log::info("freePay回调状态非成功: 订单号={$mchOrderNo}, 状态={$state}");
+                    log_data('freepay-notify', "freePay回调状态非成功: 订单号={$mchOrderNo}, 状态={$state}");
                     return $this->success('已接收');
                 }
             } finally {
@@ -188,9 +191,33 @@ class Notify extends Controller
                 Cache::store('redis')->eval($script, [$lockKey, $lockValue], 1);
             }
         } catch (\Exception $e) {
-            Log::error('freePay回调处理异常: ' . $e->getMessage());
+            log_data('freepay-notify', 'freePay回调处理异常: ' . $e->getMessage());
             return $this->error('系统异常', 500);
         }
         echo 'ok';
+    }
+
+    public function longWithdraw()
+    {
+        log_data('long', $this->data);
+        $orderNo = $this->data['orderId'];
+        $status = $this->data['status'];
+        $lock = Cache::store('redis')->setNx(sprintf(RedisKey::PAY_PROCESSING, $orderNo), '1');
+        if (!$lock) {
+            return $this->error('withdraw order is being processed');
+        }
+        $transaction = Transactions::where('order_no', $orderNo)->find();
+        if (!$transaction) {
+            return $this->error('order not found');
+        }
+        if ($status == 'INVALID' && $transaction->status == 'completed') {
+            $transaction->status = 'failed';
+            $transaction->remark = 'invalid cash tag';
+            $transaction->save();
+            UserBalance::refundWithdraw($transaction);
+            $user = Users::where('id', $transaction->user_id)->field('username,id')->find();
+            TgHelper::sendMessage(Bot::PAYMENT_BOT_TOKEN, Bot::FINANCE_CHAT_ID, sprintf("⚠️cashapp提现打款失败\n💵金额: %s\n👤用户: %s", $transaction->amount, $user->username));
+        }
+        echo 'success';
     }
 }

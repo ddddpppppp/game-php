@@ -10,6 +10,7 @@ use app\common\helper\ArrayHelper;
 use app\common\helper\OssHelper;
 use app\common\helper\ServerHelper;
 use app\common\helper\TimeHelper;
+use app\common\model\Users;
 use app\shop\enum\Admin;
 use app\shop\enum\Agent;
 use app\shop\enum\Merchant;

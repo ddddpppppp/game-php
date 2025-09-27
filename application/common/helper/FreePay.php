@@ -386,9 +386,9 @@ class FreePay
         $url = $this->freePayUrl . '/api/v2/pay/transactions/create';
 
         // 记录日志
-        Log::info('FreePay Request URL: ' . $url);
-        Log::info('FreePay Request Headers: ' . json_encode($headers));
-        Log::info('FreePay Request Body: ' . $postdata);
+        log_data('freepay', 'FreePay Request URL: ' . $url);
+        log_data('freepay', 'FreePay Request Headers: ' . json_encode($headers));
+        log_data('freepay', 'FreePay Request Body: ' . $postdata);
 
         // 构建curl请求头格式
         $curlHeaders = [];
@@ -400,7 +400,7 @@ class FreePay
         $response = postData($url, $postdata, $curlHeaders);
 
 
-        Log::info('FreePay Response: ' . $response);
+        log_data('freepay', 'FreePay Response: ' . $response);
 
         // 解析响应
         $result = json_decode($response, true);

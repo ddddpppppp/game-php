@@ -115,7 +115,7 @@ if (!function_exists("postData")) {
             $curlCommand .= " \"" . $postUrl . "\"";
 
             // 使用logData函数记录curl命令，而不是echo输出
-            logData("CURL Command: " . $curlCommand, 'info');
+            log_data("curl", "CURL Command: " . $curlCommand, 'info');
         }
 
         $data = curl_exec($ch);                                 //运行curl
@@ -140,12 +140,12 @@ if (!function_exists("generate_sign")) {
     }
 }
 
-if (!function_exists("logData")) {
-    function logData($data, $type = 'info')
+if (!function_exists("log_data")) {
+    function log_data($path, $data, $type = 'info')
     {
         Log::init([
             'type' => 'File',
-            'path' => ROOT_PATH . '/runtime/logs'
+            'path' => ROOT_PATH . '/runtime/log/' . $path
         ]);
         if (is_array($data)) {
             $data = json_encode($data);

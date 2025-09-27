@@ -24,6 +24,8 @@ use app\common\model\WithdrawChannel;
 use think\Db;
 use think\facade\Cache;
 use think\facade\Log;
+use app\common\helper\TgHelper;
+use app\common\enum\Bot as EnumBot;
 
 class User extends Controller
 {
@@ -232,6 +234,7 @@ class User extends Controller
                 'name' => $user->nickname,
                 'avatar' => $user->avatar ?: '',
                 'balance' => floatval($user->balance),
+                'balance_detail' => $this->getUserBalanceDetail($this->user)
             ]
         ]);
     }
@@ -276,6 +279,7 @@ class User extends Controller
                 'name' => $user->nickname,
                 'avatar' => $user->avatar ?: '',
                 'balance' => floatval($user->balance),
+                'balance_detail' => $this->getUserBalanceDetail($this->user)
             ]
         ]);
     }
@@ -543,6 +547,7 @@ class User extends Controller
                 'amount' => floatval(number_format($transaction->amount, 2, '.', '')),
                 'gift' => floatval(number_format($transaction->gift, 2, '.', '')),
                 'fee' => floatval(number_format($transaction->fee, 2, '.', '')),
+                'remark' => $transaction->remark ?? '',
                 'status' => $transaction->status,
                 'created_at' => TimeHelper::convertFromUTC($transaction->created_at, 'Y-m-d H:i:s'),
             ];
@@ -833,7 +838,7 @@ class User extends Controller
             $requiredBetAmount = $balanceDetail['required_bet_amount'];
 
             if ($giftBalance > 0 && !$balanceDetail['gift_withdrawable']) {
-                return $this->error("Insufficient withdrawable balance. You have ${giftBalance} in gift balance that requires ${requiredBetAmount} total bets (currently ${totalBetAmount}) to unlock for withdrawal.");
+                return $this->error("Insufficient withdrawable balance. You have {$giftBalance} in gift balance that requires {$requiredBetAmount} total bets (currently {$totalBetAmount}) to unlock for withdrawal.");
             } else {
                 return $this->error('Insufficient withdrawable balance');
             }
@@ -878,6 +883,7 @@ class User extends Controller
             $transaction->save();
             // 扣除余额
             UserBalance::subUserBalance($this->user->id, $amount, 'withdraw', "withdraw deducted, fee: {$fee}", $transaction->id);
+            TgHelper::sendMessage(EnumBot::PAYMENT_BOT_TOKEN, EnumBot::FINANCE_CHAT_ID, sprintf("⚠️提现申请提醒\n💵金额: %s\n👤用户: %s", $amount, $this->user->username));
             Db::commit();
         } catch (\Exception $e) {
             Db::rollback();
