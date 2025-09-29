@@ -43,6 +43,9 @@ class Notify extends Controller
             return $this->error('payment order is being processed');
         }
         try {
+            if ($this->data['state'] != 2) {
+                return $this->error('payment order is not successful');
+            }
             // 查询订单信息
             $order = Transactions::where('order_no', $paymentNo)
                 ->field('id,status,order_no,user_id,amount,gift')

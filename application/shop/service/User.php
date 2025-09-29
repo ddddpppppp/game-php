@@ -74,6 +74,7 @@ class User
         // 获取提现统计和记录
         $withdrawStats = Transactions::where('user_id', $userId)
             ->where('type', 'withdraw')
+            ->where('status', 'in', ['completed'])
             ->field('count(*) as total_count, sum(amount) as total_amount')
             ->find();
 

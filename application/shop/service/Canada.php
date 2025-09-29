@@ -251,6 +251,11 @@ class Canada
             ->where('deleted_at', null)
             ->count();
 
+        // 计算总赠送金额（只统计真实用户，不按渠道分组）
+        $totalGiftAmount = Db::table('game_user_balances')
+            ->where('type', 'gift') // 只统计赠送金额
+            ->where('created_at', 'between', [$startDate, $endDate])
+            ->sum('amount');
         foreach ($channelTypes as $channelType) {
             // 获取该类型的充值渠道信息
             $paymentChannel = Db::table('game_payment_channel')
@@ -298,6 +303,7 @@ class Canada
                 ->leftJoin('game_withdraw_channel c', 't.channel_id = c.id')
                 ->leftJoin('game_users u', 't.user_id = u.id')
                 ->where('t.type', 'withdraw')
+                ->where('t.status', 'in', ['completed'])
                 ->where('c.type', $channelType)
                 ->where('u.type', 'user') // 只统计真实用户
                 ->where('t.created_at', 'between', [$startDate, $endDate])
@@ -315,7 +321,6 @@ class Canada
             $depositCount = intval($depositStats['count'] ?? 0);
             $depositUserCount = intval($depositStats['user_count'] ?? 0);
             $depositAmount = floatval($depositStats['total_amount'] ?? 0);
-            $giftAmount = floatval($depositStats['total_gift'] ?? 0);
             $withdrawCount = intval($withdrawStats['count'] ?? 0);
             $withdrawUserCount = intval($withdrawStats['user_count'] ?? 0);
             $withdrawAmount = floatval($withdrawStats['total_amount'] ?? 0);
@@ -344,7 +349,7 @@ class Canada
                 'deposit_count' => $depositCount,
                 'deposit_user_count' => $depositUserCount,
                 'deposit_amount' => number_format($depositAmount, 2),
-                'gift_amount' => number_format($giftAmount, 2),
+                'gift_amount' => '--',
                 'actual_amount' => number_format($actualAmount, 2),
                 'withdraw_count' => $withdrawCount,
                 'withdraw_user_count' => $withdrawUserCount,
@@ -365,7 +370,6 @@ class Canada
             $totalStats['deposit_count'] += $depositCount;
             $totalStats['deposit_user_count'] += $depositUserCount;
             $totalStats['deposit_amount'] += $depositAmount;
-            $totalStats['gift_amount'] += $giftAmount;
             $totalStats['actual_amount'] += $actualAmount;
             $totalStats['withdraw_count'] += $withdrawCount;
             $totalStats['withdraw_user_count'] += $withdrawUserCount;
@@ -391,7 +395,7 @@ class Canada
             'deposit_count' => $totalStats['deposit_count'],
             'deposit_user_count' => $totalStats['deposit_user_count'],
             'deposit_amount' => number_format($totalStats['deposit_amount'], 2),
-            'gift_amount' => number_format($totalStats['gift_amount'], 2),
+            'gift_amount' => number_format($totalGiftAmount, 2),
             'actual_amount' => number_format($totalStats['actual_amount'], 2),
             'withdraw_count' => $totalStats['withdraw_count'],
             'withdraw_user_count' => $totalStats['withdraw_user_count'],

@@ -92,7 +92,7 @@ class Crontab extends Controller
         }
 
         // 检查是否在开始后15秒内（延迟投注）
-        $startDelayTime = strtotime($currentDraw['start_at']) + 15; // 开始后15秒
+        $startDelayTime = strtotime($currentDraw['start_at']) + 30; // 开始后15秒
         if (time() < $startDelayTime) {
             echo date('Y-m-d H:i:s') . ' - Waiting 15 seconds after start time before betting' . PHP_EOL;
             return;

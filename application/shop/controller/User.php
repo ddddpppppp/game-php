@@ -365,7 +365,7 @@ class User extends Controller
             $model = new Transactions();
             $total = $model->where($where)->count();
             $list = $model->where($where)
-                ->field('id,user_id,amount,actual_amount,order_no,fee,account,status,created_at,completed_at,expired_at')
+                ->field('id,user_id,amount,actual_amount,order_no,fee,account,status,created_at,completed_at,expired_at,channel_id')
                 ->order('id desc')
                 ->page($page, $size)
                 ->select()
@@ -410,8 +410,12 @@ class User extends Controller
 
                 $userList = \app\common\model\Users::where('id', 'in', array_column($list, 'user_id'))->field('id,username,nickname')->select()->toArray();
                 $userList = ArrayHelper::setKey($userList, 'id');
+
+                $channelList = \app\common\model\PaymentChannel::where('id', 'in', array_column($list, 'channel_id'))->field('id,name')->select()->toArray();
+                $channelList = ArrayHelper::setKey($channelList, 'id');
                 foreach ($list as &$item) {
                     $item['user'] = $userList[$item['user_id']] ?? [];
+                    $item['channel_name'] = $channelList[$item['channel_id']]['name'] ?? '';
                     $item['created_at'] = TimeHelper::convertFromUTC($item['created_at']);
                 }
                 unset($item);
