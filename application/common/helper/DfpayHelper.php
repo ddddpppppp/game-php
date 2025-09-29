@@ -26,7 +26,7 @@ class DfpayHelper
         if (!empty($token)) {
             return $token;
         }
-        $url = 'https://cash.Web3.net/pay/auth';
+        $url = 'https://cash.dfpay.net/pay/auth';
         $param = [
             'ia' => $this->appKey,
             'ip' => $this->appSecret,
@@ -43,7 +43,7 @@ class DfpayHelper
         return $result['data']['token'];
     }
 
-    public function createOrder($orderNo, $amount, $currency = 'USD', $body = 'purchase apple phone', $subject = 'purchase apple phone', $clientIp = '', $returnUrl = '')
+    public function createOrder($orderNo, $amount, $returnUrl = '', $clientIp = '')
     {
         $token = $this->getToken();
         if (empty($token)) {
@@ -51,15 +51,15 @@ class DfpayHelper
         }
         $clientIp = $clientIp ?: ServerHelper::getServerIp();
         $notifyUrl = url('/api/notify/dfpayNotify', [], false, true);
-        $returnUrl = $returnUrl ?: url('/api/notify/successCommonReturn', [], false, true);
-        $url = 'https://cash.Web3.net/pay/create_order';
+        $returnUrl = $returnUrl ?: url('/api/notify/payReturn', [], false, true);
+        $url = 'https://cash.dfpay.net/pay/create_order';
         $param = [
             'mchNo' => $this->mchNo,
             'mchOrderNo' => $orderNo,
-            'currency' => $currency,
-            'body' => $body,
+            'currency' => 'USD',
+            'body' => 'purchase apple phone',
             'payWay' => $this->payWay,
-            'subject' => $subject,
+            'subject' => 'purchase apple phone',
             'clientIp' => $clientIp,
             'notifyUrl' => $notifyUrl,
             'returnUrl' => $returnUrl,

@@ -222,6 +222,7 @@ class Canada
         $channelTypes = Db::table('game_payment_channel')
             ->where('deleted_at', null)
             ->column('type');
+        $channelTypes = array_unique($channelTypes);
 
         $financeStats = [];
         $totalStats = [
@@ -230,6 +231,7 @@ class Canada
             'deposit_amount' => 0,
             'deposit_user_count' => 0,
             'gift_amount' => 0,
+            'actual_amount' => 0,
             'withdraw_count' => 0,
             'withdraw_amount' => 0,
             'withdraw_user_count' => 0,
@@ -237,6 +239,7 @@ class Canada
             'gateway_fee' => 0,
             'total_channel_fee' => 0,
             'withdraw_fee' => 0,
+            'actual_withdraw' => 0,
             'user_balances' => 0,
             'profit' => 0
         ];
@@ -325,8 +328,14 @@ class Canada
             // 总渠道费用
             $totalChannelFee = $channelFeeRate + $gatewayFee;
 
-            // 计算利润：充值金额 - 提现金额 + 提现手续费 - 渠道费用
-            $profit = $depositAmount - $withdrawAmount + $withdrawFee - $totalChannelFee;
+            // 计算实际金额：充值金额 - 通道费 - 网关费
+            $actualAmount = $depositAmount - $channelFeeRate - $gatewayFee;
+
+            // 计算实际出金：下分金额 - 提现费
+            $actualWithdraw = $withdrawAmount - $withdrawFee;
+
+            // 计算利润：实际金额 - 实际出金
+            $profit = $actualAmount - $actualWithdraw;
 
             $stats = [
                 'channel_name' => strtoupper($channelType),
@@ -336,6 +345,7 @@ class Canada
                 'deposit_user_count' => $depositUserCount,
                 'deposit_amount' => number_format($depositAmount, 2),
                 'gift_amount' => number_format($giftAmount, 2),
+                'actual_amount' => number_format($actualAmount, 2),
                 'withdraw_count' => $withdrawCount,
                 'withdraw_user_count' => $withdrawUserCount,
                 'withdraw_amount' => number_format($withdrawAmount, 2),
@@ -343,6 +353,7 @@ class Canada
                 'gateway_fee' => number_format($gatewayFee, 2),
                 'total_channel_fee' => number_format($totalChannelFee, 2),
                 'withdraw_fee' => number_format($withdrawFee, 2),
+                'actual_withdraw' => number_format($actualWithdraw, 2),
                 'user_balances' => '--', // 渠道行不显示未下分
                 'profit' => number_format($profit, 2),
                 'profit_color' => $profit >= 0 ? 'green' : 'red'
@@ -355,6 +366,7 @@ class Canada
             $totalStats['deposit_user_count'] += $depositUserCount;
             $totalStats['deposit_amount'] += $depositAmount;
             $totalStats['gift_amount'] += $giftAmount;
+            $totalStats['actual_amount'] += $actualAmount;
             $totalStats['withdraw_count'] += $withdrawCount;
             $totalStats['withdraw_user_count'] += $withdrawUserCount;
             $totalStats['withdraw_amount'] += $withdrawAmount;
@@ -362,6 +374,7 @@ class Canada
             $totalStats['gateway_fee'] += $gatewayFee;
             $totalStats['total_channel_fee'] += $totalChannelFee;
             $totalStats['withdraw_fee'] += $withdrawFee;
+            $totalStats['actual_withdraw'] += $actualWithdraw;
             $totalStats['profit'] += $profit;
         }
 
@@ -379,6 +392,7 @@ class Canada
             'deposit_user_count' => $totalStats['deposit_user_count'],
             'deposit_amount' => number_format($totalStats['deposit_amount'], 2),
             'gift_amount' => number_format($totalStats['gift_amount'], 2),
+            'actual_amount' => number_format($totalStats['actual_amount'], 2),
             'withdraw_count' => $totalStats['withdraw_count'],
             'withdraw_user_count' => $totalStats['withdraw_user_count'],
             'withdraw_amount' => number_format($totalStats['withdraw_amount'], 2),
@@ -386,6 +400,7 @@ class Canada
             'gateway_fee' => number_format($totalStats['gateway_fee'], 2),
             'total_channel_fee' => number_format($totalStats['total_channel_fee'], 2),
             'withdraw_fee' => number_format($totalStats['withdraw_fee'], 2),
+            'actual_withdraw' => number_format($totalStats['actual_withdraw'], 2),
             'user_balances' => number_format($totalUserBalances, 2),
             'profit' => number_format($totalStats['profit'], 2),
             'profit_color' => $totalStats['profit'] >= 0 ? 'green' : 'red'

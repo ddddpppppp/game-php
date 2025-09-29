@@ -246,7 +246,7 @@ class User extends Controller
     {
         $email = trim($this->params['email']);
         $password = trim($this->params['password']);
-
+        $isApp = $this->params['isApp'] ? 1 : -1;
         if (empty($email) || empty($password)) {
             return $this->error('Email and password are required');
         }
@@ -270,6 +270,7 @@ class User extends Controller
 
         // Generate token
         $token = ServiceUser::generateToken($user->uuid);
+        Users::where('id', $user->id)->update(['is_app' => $isApp]);
 
         return $this->success([
             'token' => $token,
@@ -631,13 +632,20 @@ class User extends Controller
             if ($dailyDepositAmount >= $maxAmount) {
                 return $this->error('Cashapp daily deposit limit exceeded ({$maxAmount}), try switch to other method');
             }
-
-            $freePayHelper = new \app\common\helper\FreePay($channel->params);
-            list($code, $message, $payData) = $freePayHelper->freePayOrder($orderNo, $amount * 100, url('/api/notify/payReturn', [], false, true), ServerHelper::getServerIp(), ['methods' => 'cash_app_pay ']);
-
-            if ($code !== 1) {
-                Db::rollback();
-                return $this->error($message);
+            if ($channel->name == 'freepay-cashapp') {
+                $freePayHelper = new \app\common\helper\FreePay($channel->params);
+                list($code, $message, $payData) = $freePayHelper->freePayOrder($orderNo, $amount * 100, APP_ROOT, ServerHelper::getServerIp());
+                if ($code !== 1) {
+                    Db::rollback();
+                    return $this->error($message);
+                }
+            } else if ($channel->name == 'dfpay-cashapp') {
+                $dfpayHelper = new \app\common\helper\DfpayHelper($channel->params);
+                list($code, $message, $payData) = $dfpayHelper->createOrder($orderNo, $amount * 100, APP_ROOT, ServerHelper::getServerIp());
+                if ($code !== 1) {
+                    Db::rollback();
+                    return $this->error($message);
+                }
             }
 
             // 创建充值记录

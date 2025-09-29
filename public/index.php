@@ -36,7 +36,7 @@ $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') ? 'https' : 
 $baseUrl = $protocol . '://' . $_SERVER['HTTP_HOST'];
 
 defined('SITE_ROOT') or define('SITE_ROOT', $baseUrl);
-defined('TAKEOUT_ROOT') or define('TAKEOUT_ROOT', 'https://app.doordash.group');
+defined('APP_ROOT') or define('APP_ROOT', 'https://keno28.us');
 // 加载基础文件
 require __DIR__ . '/../thinkphp/base.php';
 

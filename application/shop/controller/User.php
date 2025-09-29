@@ -495,7 +495,7 @@ class User extends Controller
             $model = new Transactions();
             $total = $model->where($where)->count();
             $list = $model->where($where)
-                ->field('id,user_id,channel_id,amount,actual_amount,order_no,fee,account,status,created_at,completed_at,expired_at')
+                ->field('id,user_id,channel_id,amount,actual_amount,order_no,fee,account,status,created_at,completed_at,expired_at,remark')
                 ->order('id desc')
                 ->page($page, $size)
                 ->select()

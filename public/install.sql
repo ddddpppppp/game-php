@@ -142,6 +142,7 @@ CREATE TABLE
         `salt` varchar(32) DEFAULT NULL COMMENT '密码盐值',
         `ip` varchar(50) DEFAULT NULL COMMENT 'ip',
         `device_code` varchar(32) DEFAULT NULL COMMENT '设备码',
+        `is_app` tinyint(1) NOT NULL DEFAULT -1 COMMENT '是否是app',
         `created_at` datetime DEFAULT null,
         `updated_at` datetime DEFAULT null,
         `deleted_at` datetime DEFAULT null,
@@ -186,7 +187,7 @@ CREATE TABLE IF NOT EXISTS `game_transactions` (
 CREATE TABLE IF NOT EXISTS `game_user_balances` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
   `user_id` bigint(20) unsigned NOT NULL COMMENT '用户ID',
-  `type` varchar(20) NOT NULL COMMENT '变动类型：gift-赠送, deposit-充值, deposit_gift-充值赠送, withdraw-提现, game_bet-投注, game_win-收益, withdraw_failed_refund-提现失败退款',
+  `type` varchar(30) NOT NULL COMMENT '变动类型：gift-赠送, deposit-充值, deposit_gift-充值赠送, withdraw-提现, game_bet-投注, game_win-收益, withdraw_failed_refund-提现失败退款',
   `amount` decimal(15,2) NOT NULL COMMENT '变动金额',
   `balance_before` decimal(15,4) NOT NULL COMMENT '变动前余额',
   `balance_after` decimal(15,4) NOT NULL COMMENT '变动后余额',
@@ -204,7 +205,7 @@ CREATE TABLE IF NOT EXISTS `game_user_balances` (
 CREATE TABLE IF NOT EXISTS `game_user_frozen_balances` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
   `user_id` bigint(20) unsigned NOT NULL COMMENT '用户ID',
-  `type` varchar(20) NOT NULL COMMENT '变动类型：game_bet-投注, gift-赠送',
+  `type` varchar(30) NOT NULL COMMENT '变动类型：game_bet-投注, gift-赠送',
   `amount` decimal(15,2) NOT NULL COMMENT '变动金额',
   `balance_before` decimal(15,4) NOT NULL COMMENT '变动前余额',
   `balance_after` decimal(15,4) NOT NULL COMMENT '变动后余额',
