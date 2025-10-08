@@ -312,51 +312,49 @@ CREATE TABLE IF NOT EXISTS `game_canada28_bet_types` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='加拿大28游戏玩法配置表';
 
 -- 插入默认玩法数据
-INSERT INTO `game_canada28_bet_types` (`merchant_id`, `type_name`, `type_key`, `description`, `odds`, `status`, `sort`, `created_at`, `updated_at`) VALUES
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'High', 'high', '大：14-27', 2.00, 1, 1, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'Low', 'low', '小：0-13', 2.00, 1, 2, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'Odd', 'odd', '单', 2.00, 1, 3, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'Even', 'even', '双', 2.00, 1, 4, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'Triple', 'triple', '豹子', 76.00, 1, 5, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'Pair', 'pair', '对子', 12.00, 1, 6, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'Straight', 'straight', '顺子', 10.00, 1, 7, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'High Odd', 'high_odd', '大单', 4.20, 1, 8, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'Low Odd', 'low_odd', '小单', 4.61, 1, 9, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'High Even', 'high_even', '大双', 4.20, 1, 10, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'Low Even', 'low_even', '小双', 4.61, 1, 11, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'Extreme Low', 'extreme_low', '极小：0-5', 10.00, 1, 12, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'Extreme High', 'extreme_high', '极大：22-27', 10.00, 1, 13, NOW(), NOW()),
 
--- 特码投注 (0-27) - 根据图片赔率表更新
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 0', 'sum_0', '特码0', 500.00, 1, 14, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 1', 'sum_1', '特码1', 100.00, 1, 15, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 2', 'sum_2', '特码2', 70.00, 1, 16, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 3', 'sum_3', '特码3', 50.00, 1, 17, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 4', 'sum_4', '特码4', 50.00, 1, 18, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 5', 'sum_5', '特码5', 20.00, 1, 19, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 6', 'sum_6', '特码6', 17.00, 1, 20, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 7', 'sum_7', '特码7', 16.00, 1, 21, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 8', 'sum_8', '特码8', 15.00, 1, 22, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 9', 'sum_9', '特码9', 15.00, 1, 23, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 10', 'sum_10', '特码10', 13.00, 1, 24, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 11', 'sum_11', '特码11', 12.00, 1, 25, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 12', 'sum_12', '特码12', 12.00, 1, 26, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 13', 'sum_13', '特码13', 12.00, 1, 27, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 14', 'sum_14', '特码14', 50.00, 1, 28, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 15', 'sum_15', '特码15', 16.00, 1, 29, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 16', 'sum_16', '特码16', 12.00, 1, 30, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 17', 'sum_17', '特码17', 18.00, 1, 31, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 18', 'sum_18', '特码18', 14.00, 1, 32, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 19', 'sum_19', '特码19', 16.00, 1, 33, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 20', 'sum_20', '特码20', 16.00, 1, 34, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 21', 'sum_21', '特码21', 17.00, 1, 35, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 22', 'sum_22', '特码22', 20.00, 1, 36, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 23', 'sum_23', '特码23', 30.00, 1, 37, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 24', 'sum_24', '特码24', 50.00, 1, 38, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 25', 'sum_25', '特码25', 70.00, 1, 39, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 26', 'sum_26', '特码26', 100.00, 1, 40, NOW(), NOW()),
-('ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'The Sum 27', 'sum_27', '特码27', 500.00, 1, 41, NOW(), NOW());
-
+INSERT INTO `game_canada28_bet_types` (`id`, `merchant_id`, `type_name`, `type_key`, `description`, `odds`, `status`, `sort`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(124, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'BIG', 'high', '大：14-27', 2.00, 1, 1, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(125, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'SMALL', 'low', '小：0-13', 2.00, 1, 2, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(126, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'ODD', 'odd', '单', 2.00, 1, 3, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(127, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'EVEN', 'even', '双', 2.00, 1, 4, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(128, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'TRIPES', 'triple', '豹子', 50.00, 1, 5, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(129, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'DOUBLES', 'pair', '对子', 3.00, 1, 3, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(130, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'STRAIGHT', 'straight', '顺子', 10.00, 1, 4, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(131, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'BIG & ODD', 'high_odd', '大单', 4.20, 1, 8, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(132, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'SMALL & ODD', 'low_odd', '小单', 4.50, 1, 9, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(133, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'BIG & EVEN', 'high_even', '大双', 4.50, 1, 10, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(134, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'SMALL & EVEN', 'low_even', '小双', 4.20, 1, 11, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(135, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'MINIMUM', 'extreme_low', '极小：0-5', 10.00, 1, 1, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(136, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'MAXIMUM', 'extreme_high', '极大：22-27', 10.00, 1, 2, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(137, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 0', 'sum_0', '特码0', 500.00, 1, 14, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(138, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 1', 'sum_1', '特码1', 100.00, 1, 15, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(139, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 2', 'sum_2', '特码2', 70.00, 1, 16, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(140, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 3', 'sum_3', '特码3', 50.00, 1, 17, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(141, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 4', 'sum_4', '特码4', 30.00, 1, 18, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(142, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 5', 'sum_5', '特码5', 20.00, 1, 19, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(143, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 6', 'sum_6', '特码6', 17.00, 1, 20, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(144, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 7', 'sum_7', '特码7', 16.00, 1, 21, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(145, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 8', 'sum_8', '特码8', 15.00, 1, 22, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(146, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 9', 'sum_9', '特码9', 14.00, 1, 23, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(147, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 10', 'sum_10', '特码10', 13.00, 1, 24, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(148, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 11', 'sum_11', '特码11', 12.00, 1, 25, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(149, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 12', 'sum_12', '特码12', 12.00, 1, 26, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(150, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 13', 'sum_13', '特码13', 12.00, 1, 27, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(151, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 14', 'sum_14', '特码14', 12.00, 1, 28, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(152, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 15', 'sum_15', '特码15', 12.00, 1, 29, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(153, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 16', 'sum_16', '特码16', 12.00, 1, 30, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(154, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 17', 'sum_17', '特码17', 13.00, 1, 31, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(155, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 18', 'sum_18', '特码18', 14.00, 1, 32, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(156, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 19', 'sum_19', '特码19', 15.00, 1, 33, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(157, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 20', 'sum_20', '特码20', 16.00, 1, 34, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(158, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 21', 'sum_21', '特码21', 17.00, 1, 35, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(159, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 22', 'sum_22', '特码22', 20.00, 1, 36, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(160, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 23', 'sum_23', '特码23', 30.00, 1, 37, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(161, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 24', 'sum_24', '特码24', 50.00, 1, 38, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(162, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 25', 'sum_25', '特码25', 70.00, 1, 39, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(163, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 26', 'sum_26', '特码26', 100.00, 1, 40, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(164, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 27', 'sum_27', '特码27', 500.00, 1, 41, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL);
 -- 动态赔率规则表 - 根据特殊条件调整赔率
 -- DROP TABLE IF EXISTS `game_canada28_dynamic_odds`;
 CREATE TABLE IF NOT EXISTS `game_canada28_dynamic_odds` (
@@ -443,3 +441,135 @@ CREATE TABLE `game_group_message` (
 INSERT INTO `game_group_message` (`user_id`, `group_id`, `message`, `type`, `created_at`, `updated_at`) VALUES
 ('bot', 'canada28_game_group', 'Welcome to Canada 28! Place your bets and good luck! 🍀', 'text', NOW(), NOW()),
 ('bot', 'canada28_game_group', 'Remember to place your bets before the timer runs out! ⏰', 'text', DATE_ADD(NOW(), INTERVAL 2 MINUTE), DATE_ADD(NOW(), INTERVAL 2 MINUTE));
+
+
+-- 加拿大28游戏玩法配置表
+-- DROP TABLE IF EXISTS `game_bingo28_bet_types`;
+CREATE TABLE IF NOT EXISTS `game_bingo28_bet_types` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `merchant_id` char(36) NOT NULL COMMENT '商户ID',
+    `type_name` varchar(50) NOT NULL COMMENT '玩法名称',
+    `type_key` varchar(50) NOT NULL COMMENT '玩法标识',
+    `description` varchar(200) DEFAULT NULL COMMENT '玩法描述',
+    `odds` decimal(8,2) NOT NULL COMMENT '赔率倍数',
+    `status` tinyint(2) DEFAULT 1 NOT NULL COMMENT '状态：1启用，0禁用',
+    `sort` int(11) DEFAULT 0 COMMENT '排序',
+    `created_at` datetime,
+    `updated_at` datetime,
+    `deleted_at` datetime DEFAULT null,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `merchant_type` (`merchant_id`, `type_key`),
+    KEY `merchant_id` (`merchant_id`),
+    KEY `status` (`status`),
+    KEY `sort` (`sort`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='加拿大28游戏玩法配置表';
+
+-- 插入默认玩法数据
+INSERT INTO `game_bingo28_bet_types` (`id`, `merchant_id`, `type_name`, `type_key`, `description`, `odds`, `status`, `sort`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(124, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'BIG', 'high', '大：14-27', 2.00, 1, 1, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(125, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'SMALL', 'low', '小：0-13', 2.00, 1, 2, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(126, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'ODD', 'odd', '单', 2.00, 1, 3, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(127, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'EVEN', 'even', '双', 2.00, 1, 4, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(128, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'TRIPES', 'triple', '豹子', 50.00, 1, 5, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(129, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'DOUBLES', 'pair', '对子', 3.00, 1, 3, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(130, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'STRAIGHT', 'straight', '顺子', 10.00, 1, 4, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(131, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'BIG & ODD', 'high_odd', '大单', 4.20, 1, 8, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(132, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'SMALL & ODD', 'low_odd', '小单', 4.50, 1, 9, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(133, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'BIG & EVEN', 'high_even', '大双', 4.50, 1, 10, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(134, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'SMALL & EVEN', 'low_even', '小双', 4.20, 1, 11, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(135, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'MINIMUM', 'extreme_low', '极小：0-5', 10.00, 1, 1, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(136, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'MAXIMUM', 'extreme_high', '极大：22-27', 10.00, 1, 2, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(137, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 0', 'sum_0', '特码0', 500.00, 1, 14, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(138, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 1', 'sum_1', '特码1', 100.00, 1, 15, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(139, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 2', 'sum_2', '特码2', 70.00, 1, 16, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(140, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 3', 'sum_3', '特码3', 50.00, 1, 17, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(141, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 4', 'sum_4', '特码4', 30.00, 1, 18, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(142, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 5', 'sum_5', '特码5', 20.00, 1, 19, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(143, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 6', 'sum_6', '特码6', 17.00, 1, 20, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(144, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 7', 'sum_7', '特码7', 16.00, 1, 21, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(145, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 8', 'sum_8', '特码8', 15.00, 1, 22, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(146, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 9', 'sum_9', '特码9', 14.00, 1, 23, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(147, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 10', 'sum_10', '特码10', 13.00, 1, 24, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(148, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 11', 'sum_11', '特码11', 12.00, 1, 25, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(149, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 12', 'sum_12', '特码12', 12.00, 1, 26, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(150, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 13', 'sum_13', '特码13', 12.00, 1, 27, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(151, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 14', 'sum_14', '特码14', 12.00, 1, 28, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(152, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 15', 'sum_15', '特码15', 12.00, 1, 29, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(153, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 16', 'sum_16', '特码16', 12.00, 1, 30, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(154, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 17', 'sum_17', '特码17', 13.00, 1, 31, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(155, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 18', 'sum_18', '特码18', 14.00, 1, 32, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(156, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 19', 'sum_19', '特码19', 15.00, 1, 33, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(157, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 20', 'sum_20', '特码20', 16.00, 1, 34, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(158, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 21', 'sum_21', '特码21', 17.00, 1, 35, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(159, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 22', 'sum_22', '特码22', 20.00, 1, 36, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(160, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 23', 'sum_23', '特码23', 30.00, 1, 37, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(161, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 24', 'sum_24', '特码24', 50.00, 1, 38, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(162, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 25', 'sum_25', '特码25', 70.00, 1, 39, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(163, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 26', 'sum_26', '特码26', 100.00, 1, 40, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL),
+(164, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'THE SUM 27', 'sum_27', '特码27', 500.00, 1, 41, '2025-09-21 00:00:54', '2025-09-21 00:00:54', NULL);
+
+-- 动态赔率规则表 - 根据特殊条件调整赔率
+-- DROP TABLE IF EXISTS `game_bingo28_dynamic_odds`;
+CREATE TABLE IF NOT EXISTS `game_bingo28_dynamic_odds` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `merchant_id` char(36) NOT NULL COMMENT '商户ID',
+    `rule_name` varchar(100) NOT NULL COMMENT '规则名称',
+    `trigger_condition` varchar(50) NOT NULL COMMENT '触发条件：sum_range, sum_exact, sum_in',
+    `trigger_values` text COMMENT '触发条件值（JSON格式）',
+    `bet_type_adjustments` text COMMENT '投注类型赔率调整（JSON格式）',
+    `status` tinyint(2) DEFAULT 1 COMMENT '状态：1启用，0禁用',
+    `priority` int(11) DEFAULT 0 COMMENT '优先级',
+    `created_at` datetime,
+    `updated_at` datetime,
+    PRIMARY KEY (`id`),
+    KEY `merchant_id` (`merchant_id`),
+    KEY `status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='动态赔率规则表';
+
+-- 插入13-14特殊赔率规则
+INSERT INTO `game_bingo28_dynamic_odds` (`merchant_id`, `rule_name`, `trigger_condition`, `trigger_values`, `bet_type_adjustments`, `status`, `priority`, `created_at`, `updated_at`) VALUES
+('ad22ab51-1637-42c5-a82f-4b51382f7bc3', '13-14特殊赔率', 'sum_in', '[13, 14]', '{"high": 1.6, "low": 1.6, "odd": 1.6, "even": 1.6, "high_odd": 1.0, "low_odd": 1.0, "high_even": 1.0, "low_even": 1.0}', 1, 100, NOW(), NOW());
+
+-- 游戏期数表 - 记录每期游戏的状态和结果
+-- DROP TABLE IF EXISTS `game_canada28_draws`;
+CREATE TABLE `game_bingo28_draws` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `period_number` varchar(20) NOT NULL COMMENT '期号，如：3333197',
+  `status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '状态：0-等待开奖，1-开奖中，2-已开奖，3-已结算',
+  `start_at` datetime NOT NULL COMMENT '开始投注时间',
+  `end_at` datetime NOT NULL COMMENT '停止投注时间',
+  `draw_at` datetime NOT NULL COMMENT '开奖时间',
+  `result_numbers` json DEFAULT NULL COMMENT '开奖号码，JSON格式存储三个数字',
+  `result_sum` int(3) DEFAULT NULL COMMENT '开奖结果总和(0-27)',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  `deleted_at` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_period_number` (`period_number`),
+  KEY `idx_status` (`status`),
+  KEY `idx_draw_at` (`draw_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Bingo28游戏期数表';
+
+-- 玩家投注记录表 - 记录每个玩家的投注和结果
+-- DROP TABLE IF EXISTS `game_canada28_bets`;
+CREATE TABLE `game_bingo28_bets` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `merchant_id` varchar(36) NOT NULL COMMENT '商户ID',
+  `user_id` varchar(36) NOT NULL COMMENT '用户ID',
+  `period_number` varchar(20) NOT NULL COMMENT '期号',
+  `bet_type` varchar(50) NOT NULL COMMENT '投注类型：high/low/odd/even/num_0等',
+  `bet_name` varchar(100) NOT NULL COMMENT '投注名称：High/Low/Number 0等',
+  `amount` decimal(15,2) NOT NULL COMMENT '投注金额',
+  `multiplier` decimal(8,2) NOT NULL COMMENT '投注时的赔率',
+  `status` varchar(20) NOT NULL DEFAULT 'pending' COMMENT '状态：pending-等待开奖，win-已中奖，lose-未中奖，cancel-已取消',
+  `ip` varchar(45) DEFAULT NULL COMMENT '投注IP地址',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  `deleted_at` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_merchant_id` (`merchant_id`),
+  KEY `idx_period_number` (`period_number`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_bet_type` (`bet_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 AUTO_INCREMENT=100000086 COLLATE=utf8mb4_unicode_ci COMMENT='Bingo28玩家投注记录表';

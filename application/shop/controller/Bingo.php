@@ -8,7 +8,7 @@ use app\common\controller\Controller;
 use app\common\enum\Common;
 use app\common\helper\ArrayHelper;
 use app\common\helper\TimeHelper;
-use app\common\model\Canada28Bets;
+use app\common\model\Bingo28Bets;
 use app\common\service\AdminBalance;
 use app\common\service\Bot;
 use app\common\utils\ParamsAesHelper;
@@ -26,10 +26,10 @@ use think\facade\Log;
 use app\common\model\MiningProducts;
 use app\common\model\MiningProductDailyApy;
 use app\common\model\Transactions;
-use app\common\model\Canada28BetTypes;
-use app\shop\service\Canada as CanadaService;
+use app\common\model\Bingo28BetTypes;
+use app\shop\service\Bingo as BingoService;
 
-class Canada extends Controller
+class Bingo extends Controller
 {
     protected $params = [];
     /** @var \app\shop\model\Admin|null $admin */
@@ -59,7 +59,7 @@ class Canada extends Controller
     {
         try {
             $merchantId = $this->admin->merchant_id ?: 'default';
-            $list = Canada28BetTypes::getBetTypesByMerchantId($merchantId);
+            $list = Bingo28BetTypes::getBetTypesByMerchantId($merchantId);
         } catch (\Exception $e) {
             return $this->error('获取失败：' . $e->getMessage());
         }
@@ -93,7 +93,7 @@ class Canada extends Controller
                 'updated_at' => date('Y-m-d H:i:s')
             ];
 
-            $result = Canada28BetTypes::updateBetType($id, $data);
+            $result = Bingo28BetTypes::updateBetType($id, $data);
         } catch (\Exception $e) {
             return $this->error('更新失败：' . $e->getMessage());
         }
@@ -117,7 +117,7 @@ class Canada extends Controller
                 return $this->error('请选择要操作的记录');
             }
 
-            $result = Canada28BetTypes::batchUpdateStatus($ids, $status);
+            $result = Bingo28BetTypes::batchUpdateStatus($ids, $status);
         } catch (\Exception $e) {
             return $this->error('操作失败：' . $e->getMessage());
         }
@@ -157,7 +157,7 @@ class Canada extends Controller
                 $where[] = ['draw_at', '<=', TimeHelper::convertToUTC($startDate[1])];
             }
             // 获取开奖记录
-            $query = \app\common\model\Canada28Draws::where($where)
+            $query = \app\common\model\Bingo28Draws::where($where)
                 ->order('period_number desc');
 
             $total = $query->count();
@@ -176,7 +176,7 @@ class Canada extends Controller
             $periodNumbers = array_column($draws->toArray(), 'period_number');
 
             // 批量获取投注统计数据 - 按期号和用户类型分组
-            $betStats = \think\Db::table('game_canada28_bets')
+            $betStats = \think\Db::table('game_bingo28_bets')
                 ->alias('b')
                 ->leftJoin('game_users u', 'b.user_id = u.uuid')
                 ->field([
@@ -244,7 +244,7 @@ class Canada extends Controller
                     'id' => $draw['id'],
                     'period_number' => $draw['period_number'],
                     'status' => $draw['status'],
-                    'status_text' => \app\common\model\Canada28Draws::getStatusCnText($draw['status']),
+                    'status_text' => \app\common\model\Bingo28Draws::getStatusCnText($draw['status']),
                     'result_numbers' => $draw['result_numbers'],
                     'result_sum' => $draw['result_sum'],
                     'start_at' => TimeHelper::convertFromUTC($draw['start_at']),
@@ -312,10 +312,10 @@ class Canada extends Controller
         }
 
         // 获取投注记录 - 使用JOIN避免循环查询
-        $query = \think\Db::table('game_canada28_bets')
+        $query = \think\Db::table('game_bingo28_bets')
             ->alias('b')
             ->leftJoin('game_users u', 'b.user_id = u.uuid')
-            ->leftJoin('game_canada28_draws d', 'b.period_number = d.period_number')
+            ->leftJoin('game_bingo28_draws d', 'b.period_number = d.period_number')
             ->field([
                 'b.*',
                 'u.username',
@@ -368,7 +368,7 @@ class Canada extends Controller
                 'multiplier' => $bet['multiplier'],
                 'potential_win' => number_format($potentialWin, 2),
                 'status' => $bet['status'],
-                'status_text' => Canada28Bets::getStatusCnText($bet['status']),
+                'status_text' => Bingo28Bets::getStatusCnText($bet['status']),
                 'actual_profit' => number_format($actualProfit, 2),
                 'result_numbers' => json_decode($bet['result_numbers'], true),
                 'result_sum' => $bet['result_sum'],

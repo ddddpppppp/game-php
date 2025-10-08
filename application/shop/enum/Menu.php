@@ -17,11 +17,24 @@ class Menu
         'canada28' => [
             'name' => '加拿大28',
             'children' => [
-                'canada28Dashboard' => ['name' => '仪表盘', 'children' => ['canada28Dashboard.browse' => ['name' => '浏览']]],
                 'canada28ProductSetting' => ['name' => '玩法设置', 'children' => ['canada28ProductSetting.browse' => ['name' => '浏览']]],
                 'canada28OrderList' => ['name' => '投注记录', 'children' => ['canada28OrderList.browse' => ['name' => '浏览']]],
                 'canada28CrawList' => ['name' => '开奖记录', 'children' => ['canada28CrawList.browse' => ['name' => '浏览']]],
-                'canada28Fianace' => ['name' => '财务统计', 'children' => ['canada28Fianace.browse' => ['name' => '浏览']]],
+            ]
+        ],
+        'canada28' => [
+            'name' => 'Bingo28',
+            'children' => [
+                'bingo28ProductSetting' => ['name' => '玩法设置', 'children' => ['bingo28ProductSetting.browse' => ['name' => '浏览']]],
+                'bingo28OrderList' => ['name' => '投注记录', 'children' => ['bingo28OrderList.browse' => ['name' => '浏览']]],
+                'bingo28CrawList' => ['name' => '开奖记录', 'children' => ['bingo28CrawList.browse' => ['name' => '浏览']]],
+            ]
+        ],
+        'finance' => [
+            'name' => '财务统计',
+            'children' => [
+                'financeDashboard' => ['name' => '仪表盘', 'children' => ['financeDashboard.browse' => ['name' => '浏览']]],
+                'financeSum' => ['name' => '财务统计', 'children' => ['financeSum.browse' => ['name' => '浏览']]],
             ]
         ],
         'backendManage' => [

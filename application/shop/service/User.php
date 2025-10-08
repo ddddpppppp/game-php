@@ -5,6 +5,7 @@ namespace app\shop\service;
 use app\common\helper\ArrayHelper;
 use app\common\helper\TimeHelper;
 use app\common\model\Canada28Bets;
+use app\common\model\Bingo28Bets;
 use app\common\model\Transactions;
 use app\common\model\Users;
 
@@ -101,14 +102,17 @@ class User
         $stats['recent_records']['withdraw'] = $withdrawRecords;
 
         // 获取下注统计和记录
-        $betStats = Canada28Bets::where('user_id', $user['uuid'])
+        $canada28Stats = Canada28Bets::where('user_id', $user['uuid'])
             ->field('count(*) as total_count, sum(amount) as total_amount')
             ->find();
 
-        if ($betStats) {
-            $stats['summary']['total_bet_count'] = $betStats['total_count'] ?: 0;
-            $stats['summary']['total_bet_amount'] = $betStats['total_amount'] ?: 0;
-        }
+        $bingo28Stats = Bingo28Bets::where('user_id', $user['uuid'])
+            ->field('count(*) as total_count, sum(amount) as total_amount')
+            ->find();
+
+        // 合并两个游戏的统计数据
+        $stats['summary']['total_bet_count'] = ($canada28Stats['total_count'] ?: 0) + ($bingo28Stats['total_count'] ?: 0);
+        $stats['summary']['total_bet_amount'] = ($canada28Stats['total_amount'] ?: 0) + ($bingo28Stats['total_amount'] ?: 0);
 
         // 获取最近100条下注记录
         $betRecords = Canada28Bets::where('user_id', $user['uuid'])
@@ -125,8 +129,24 @@ class User
         }
         unset($bet);
 
-        $stats['recent_records']['bet'] = $betRecords;
+        $stats['recent_records']['canada_bet'] = $betRecords;
 
+        // 获取最近100条下注记录
+        $betRecords = Bingo28Bets::where('user_id', $user['uuid'])
+            ->field('amount, status, bet_name, created_at, period_number, multiplier')
+            ->order('id desc')
+            ->limit(100)
+            ->select()
+            ->toArray();
+
+        // 计算输赢状态
+        foreach ($betRecords as &$bet) {
+            $bet['created_at'] = TimeHelper::convertFromUTC($bet['created_at']);
+            $bet['win_amount'] = $bet['status'] == 'win' ? $bet['amount'] * $bet['multiplier'] : 0;
+        }
+        unset($bet);
+
+        $stats['recent_records']['bingo_bet'] = $betRecords;
         return $stats;
     }
 }

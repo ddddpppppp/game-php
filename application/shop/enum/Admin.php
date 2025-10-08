@@ -12,16 +12,30 @@ class Admin
 
         // canada28
         'canada28',
-        'canada28Dashboard',
-        'canada28Dashboard.browse',
         'canada28ProductSetting',
         'canada28ProductSetting.browse',
         'canada28OrderList',
         'canada28OrderList.browse',
         'canada28CrawList',
         'canada28CrawList.browse',
-        'canada28Fianace',
-        'canada28Fianace.browse',
+
+        // bingo28
+        'bingo28',
+        'bingo28Dashboard',
+        'bingo28Dashboard.browse',
+        'bingo28ProductSetting',
+        'bingo28ProductSetting.browse',
+        'bingo28OrderList',
+        'bingo28OrderList.browse',
+        'bingo28CrawList',
+        'bingo28CrawList.browse',
+
+        // finance
+        'finance',
+        'financeDashboard',
+        'financeDashboard.browse',
+        'financeSum',
+        'financeSum.browse',
 
         // user
         'user',

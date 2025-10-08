@@ -43,7 +43,7 @@ class User extends Controller
         }
         $token = request()->header('Authorization') ?: request()->header('Token');
         if (empty($token)) {
-            return $this->error('Token required', 401);
+            return $this->error('Please sign in', 401);
         }
 
         $userId = ServiceUser::getUserIdByToken($token);
@@ -733,7 +733,7 @@ class User extends Controller
             $transaction->account = '';
             $transaction->order_no = $orderNo;
             $transaction->fee = 0;
-            $transaction->gift = $rechargeConfig['usdt_online_gift_rate'] ? $amount * $rechargeConfig['usdt_online_gift_rate'] / 100 : 0;
+            $transaction->gift = $rechargeConfig['usdc_online_gift_rate'] ? $amount * $rechargeConfig['usdc_online_gift_rate'] / 100 : 0;
             $transaction->status = 'pending';
             $transaction->expired_at = date('Y-m-d H:i:s', strtotime('+30 minutes'));
             $transaction->save();
