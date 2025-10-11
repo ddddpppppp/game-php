@@ -437,6 +437,41 @@ CREATE TABLE `game_group_message` (
   KEY `idx_group_id` (`group_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='群组消息表';
 
+-- 客服聊天消息表
+CREATE TABLE `game_customer_service_message` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `user_id` varchar(36) NOT NULL COMMENT '用户ID',
+  `admin_id` varchar(36) DEFAULT NULL COMMENT '管理员ID（空表示用户发送）',
+  `message` text NOT NULL COMMENT '消息内容',
+  `type` varchar(20) NOT NULL DEFAULT 'text' COMMENT '消息类型：text-文本，image-图片',
+  `is_read` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否已读：0-未读，1-已读',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  `deleted_at` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_admin_id` (`admin_id`),
+  KEY `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='客服聊天消息表';
+
+-- 客服会话表
+CREATE TABLE `game_customer_service_session` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `user_id` varchar(36) NOT NULL COMMENT '用户ID',
+  `admin_id` varchar(36) DEFAULT NULL COMMENT '当前服务的管理员ID',
+  `last_message` text COMMENT '最后一条消息',
+  `last_message_at` datetime COMMENT '最后消息时间',
+  `unread_count` int(11) NOT NULL DEFAULT 0 COMMENT '未读消息数',
+  `status` tinyint(1) NOT NULL DEFAULT 1 COMMENT '会话状态：1-活跃，2-已关闭',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  `deleted_at` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_user_id` (`user_id`),
+  KEY `idx_admin_id` (`admin_id`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='客服会话表';
+
 -- 插入示例群组消息
 INSERT INTO `game_group_message` (`user_id`, `group_id`, `message`, `type`, `created_at`, `updated_at`) VALUES
 ('bot', 'canada28_game_group', 'Welcome to Canada 28! Place your bets and good luck! 🍀', 'text', NOW(), NOW()),

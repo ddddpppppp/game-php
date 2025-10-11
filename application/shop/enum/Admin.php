@@ -54,6 +54,8 @@ class Admin
         'userRechargeList.browse',
         'userWithdrawList',
         'userWithdrawList.browse',
+        // 'customerServiceList',
+        // 'customerServiceList.browse',
 
         // 后台管理
         'backendManage',

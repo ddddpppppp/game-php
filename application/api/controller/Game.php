@@ -72,6 +72,7 @@ class Game extends Controller
         return $this->success([
             'canada28_draw' => Canada28Draws::getCurrentDraw(),
             'bingo28_draw' => Bingo28Draws::getCurrentDraw(),
+            'keno_draw' => KenoDraws::getCurrentDraw(),
         ]);
     }
 
@@ -166,7 +167,7 @@ class Game extends Controller
             $messages = Db::table('game_group_message')
                 ->where('group_id', $groupId)
                 ->where('deleted_at', null)
-                ->order('created_at desc')
+                ->order('id desc')
                 ->limit(50)
                 ->select();
 
@@ -551,7 +552,7 @@ class Game extends Controller
             $messages = Db::table('game_group_message')
                 ->where('group_id', $groupId)
                 ->where('deleted_at', null)
-                ->order('created_at desc')
+                ->order('id desc')
                 ->limit(50)
                 ->select();
 

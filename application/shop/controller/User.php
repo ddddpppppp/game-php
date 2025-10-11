@@ -688,4 +688,174 @@ class User extends Controller
         AdminOperationLog::saveLog($this->admin->uuid, $this->admin->merchant_id ?? '', $actionText);
         return $this->success([], 1, $actionText . '成功');
     }
+
+    /**
+     * Get customer service sessions (for admin)
+     */
+    public function getCustomerServiceSessions()
+    {
+        try {
+            $page = isset($this->params['page']) ? intval($this->params['page']) : 1;
+            $limit = isset($this->params['limit']) ? intval($this->params['limit']) : 20;
+            $status = isset($this->params['status']) ? intval($this->params['status']) : 1;
+            $search = isset($this->params['search']) ? trim($this->params['search']) : '';
+
+            if ($page < 1) $page = 1;
+            if ($limit < 1 || $limit > 100) $limit = 20;
+
+            $offset = ($page - 1) * $limit;
+
+            // Build query
+            $query = \think\Db::table('game_customer_service_session')
+                ->alias('s')
+                ->leftJoin('game_users u', 's.user_id = u.uuid')
+                ->where('s.status', $status)
+                ->whereNull('s.deleted_at');
+
+            // Add search filter
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->whereOr('u.nickname', 'like', '%' . $search . '%')
+                        ->whereOr('u.username', 'like', '%' . $search . '%');
+                });
+            }
+
+            // Get total count
+            $total = $query->count();
+
+            // Get sessions
+            $sessions = $query
+                ->field('s.*, u.nickname as user_name, u.username, u.avatar as user_avatar')
+                ->order('s.last_message_at DESC')
+                ->limit($offset, $limit)
+                ->select();
+
+            // Calculate admin unread count for each session (messages from user that admin hasn't read)
+            foreach ($sessions as &$session) {
+                $adminUnreadCount = \think\Db::table('game_customer_service_message')
+                    ->where('user_id', $session['user_id'])
+                    ->where('is_read', 0)
+                    ->whereNull('admin_id') // Messages from user (not from admin)
+                    ->whereNull('deleted_at')
+                    ->count();
+
+                $session['admin_unread_count'] = $adminUnreadCount;
+            }
+        } catch (\Exception $e) {
+            return $this->error('Failed to get sessions: ' . $e->getMessage());
+        }
+        return $this->success([
+            'sessions' => $sessions,
+            'has_more' => ($offset + $limit) < $total,
+            'total' => $total,
+        ]);
+    }
+
+    /**
+     * Get customer service chat history (for admin)
+     */
+    public function getCustomerServiceChatHistory()
+    {
+        try {
+            $userId = isset($this->params['user_id']) ? trim($this->params['user_id']) : '';
+            $page = isset($this->params['page']) ? intval($this->params['page']) : 1;
+            $limit = isset($this->params['limit']) ? intval($this->params['limit']) : 50;
+
+            if (empty($userId)) {
+                return $this->error('User ID is required');
+            }
+
+            if ($page < 1) $page = 1;
+            if ($limit < 1 || $limit > 100) $limit = 50;
+
+            $offset = ($page - 1) * $limit;
+
+            // Get messages
+            $messages = \think\Db::table('game_customer_service_message')
+                ->where('user_id', $userId)
+                ->whereNull('deleted_at')
+                ->order('created_at DESC')
+                ->limit($offset, $limit)
+                ->select();
+
+            // Get total count
+            $total = \think\Db::table('game_customer_service_message')
+                ->where('user_id', $userId)
+                ->whereNull('deleted_at')
+                ->count();
+
+            // Get user info
+            $user = \think\Db::table('game_users')
+                ->where('uuid', $userId)
+                ->find();
+
+            // Format messages
+            $formattedMessages = [];
+            foreach ($messages as $message) {
+                $userName = $user ? $user['name'] : 'User';
+                $adminName = 'Support Team';
+
+                if (!empty($message['admin_id'])) {
+                    $admin = \think\Db::table('game_admin')
+                        ->where('uuid', $message['admin_id'])
+                        ->find();
+                    if ($admin) {
+                        $adminName = $admin['nickname'] ?: 'Support Team';
+                    }
+                }
+
+                $formattedMessages[] = [
+                    'id' => $message['id'],
+                    'user_id' => $message['user_id'],
+                    'admin_id' => $message['admin_id'],
+                    'user_name' => empty($message['admin_id']) ? $userName : $adminName,
+                    'message' => $message['message'],
+                    'type' => $message['type'],
+                    'is_read' => $message['is_read'],
+                    'is_admin' => !empty($message['admin_id']),
+                    'created_at' => $message['created_at'],
+                ];
+            }
+
+            // Reverse to show oldest first
+            $formattedMessages = array_reverse($formattedMessages);
+        } catch (\Exception $e) {
+            return $this->error('Failed to get chat history: ' . $e->getMessage());
+        }
+        return $this->success([
+            'messages' => $formattedMessages,
+            'has_more' => ($offset + $limit) < $total,
+            'total' => $total,
+            'user' => $user ? [
+                'uuid' => $user['uuid'],
+                'name' => $user['name'],
+                'username' => $user['username'],
+                'avatar' => $user['avatar'],
+            ] : null,
+        ]);
+    }
+
+    /**
+     * Mark messages as read (for admin)
+     */
+    public function markCustomerServiceMessagesAsRead()
+    {
+        try {
+            $userId = isset($this->params['user_id']) ? trim($this->params['user_id']) : '';
+
+            if (empty($userId)) {
+                return $this->error('User ID is required');
+            }
+
+            // Mark all unread messages from user as read
+            \think\Db::table('game_customer_service_message')
+                ->where('user_id', $userId)
+                ->where('is_read', 0)
+                ->whereNull('admin_id')
+                ->update(['is_read' => 1, 'updated_at' => date('Y-m-d H:i:s')]);
+        } catch (\Exception $e) {
+            return $this->error('Failed to mark messages as read: ' . $e->getMessage());
+        }
+        return $this->success('Messages marked as read');
+    }
 }

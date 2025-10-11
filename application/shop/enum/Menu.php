@@ -12,6 +12,7 @@ class Menu
                 'userList' => ['name' => '用户列表', 'children' => ['userList.browse' => ['name' => '浏览']]],
                 'userRechargeList' => ['name' => '充值列表', 'children' => ['userRechargeList.browse' => ['name' => '浏览']]],
                 'userWithdrawList' => ['name' => '提现列表', 'children' => ['userWithdrawList.browse' => ['name' => '浏览']]],
+                'customerServiceList' => ['name' => '客服中心', 'children' => ['customerServiceList.browse' => ['name' => '浏览']]],
             ]
         ],
         'canada28' => [

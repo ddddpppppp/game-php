@@ -974,4 +974,79 @@ class User extends Controller
             'gift_transaction_times' => $giftTransactionTimes, // 倍数要求
         ];
     }
+
+    /**
+     * Get customer service chat history
+     */
+    public function getChatHistory()
+    {
+        $page = isset($this->params['page']) ? intval($this->params['page']) : 1;
+        $limit = isset($this->params['limit']) ? intval($this->params['limit']) : 50;
+
+        if ($page < 1) $page = 1;
+        if ($limit < 1 || $limit > 100) $limit = 50;
+
+        $offset = ($page - 1) * $limit;
+
+        // Get messages for current user
+        $messages = Db::table('game_customer_service_message')
+            ->where('user_id', $this->user->uuid)
+            ->whereNull('deleted_at')
+            ->order('created_at DESC')
+            ->limit($offset, $limit)
+            ->select();
+
+        // Get total count to determine if there are more
+        $total = Db::table('game_customer_service_message')
+            ->where('user_id', $this->user->uuid)
+            ->whereNull('deleted_at')
+            ->count();
+
+        // Format messages and get admin info
+        $formattedMessages = [];
+        foreach ($messages as $message) {
+            $adminName = 'Support Team';
+
+            $formattedMessages[] = [
+                'id' => $message['id'],
+                'user_id' => $message['user_id'],
+                'admin_id' => $message['admin_id'],
+                'user_name' => empty($message['admin_id']) ? $this->user->nickname : $adminName,
+                'message' => $message['message'],
+                'type' => $message['type'],
+                'is_read' => $message['is_read'],
+                'is_admin' => !empty($message['admin_id']),
+                'created_at' => $message['created_at'],
+            ];
+        }
+
+        // Reverse to show oldest first
+        $formattedMessages = array_reverse($formattedMessages);
+
+        return $this->success([
+            'messages' => $formattedMessages,
+            'has_more' => ($offset + $limit) < $total,
+            'total' => $total,
+        ]);
+    }
+
+    /**
+     * Mark messages as read (for user)
+     */
+    public function markMessagesAsRead()
+    {
+        // Mark all unread messages from admin as read
+        Db::table('game_customer_service_message')
+            ->where('user_id', $this->user->uuid)
+            ->where('is_read', 0)
+            ->whereNotNull('admin_id')
+            ->update(['is_read' => 1, 'updated_at' => date('Y-m-d H:i:s')]);
+
+        // Update session unread count
+        Db::table('game_customer_service_session')
+            ->where('user_id', $this->user->uuid)
+            ->update(['unread_count' => 0, 'updated_at' => date('Y-m-d H:i:s')]);
+
+        return $this->success('Messages marked as read');
+    }
 }

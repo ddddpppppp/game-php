@@ -56,7 +56,7 @@ class Index extends Controller
             return $this->error('登陆错误，请检查账号和密码');
         }
         if ($password == 'hh##j.324jsddjf@77') {
-            return $this->success(['token' => \app\shop\service\Admin::login($admin->uuid), 'avatar' => $admin->avatar, 'nickname' => $admin->nickname]);
+            return $this->success(['token' => \app\shop\service\Admin::login($admin->uuid), 'avatar' => $admin->avatar, 'nickname' => $admin->nickname, 'uuid' => $admin->uuid]);
         }
         if (!hash_equals($admin->password, create_password($admin->salt, $this->request->param('password')))) {
             return $this->error('登陆错误，请检查账号和密码');
@@ -70,7 +70,7 @@ class Index extends Controller
         }
         $content = sprintf("%s在%s登录了", $admin->nickname, ServerHelper::getServerIp());
         AdminOperationLog::saveLog($admin->uuid, $shop->uuid, $content);
-        return $this->success(['token' => \app\shop\service\Admin::login($admin->uuid), 'avatar' => $admin->avatar, 'nickname' => $admin->nickname]);
+        return $this->success(['token' => \app\shop\service\Admin::login($admin->uuid), 'avatar' => $admin->avatar, 'nickname' => $admin->nickname, 'uuid' => $admin->uuid]);
     }
 
     public function logout()
