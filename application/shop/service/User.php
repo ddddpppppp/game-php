@@ -6,6 +6,7 @@ use app\common\helper\ArrayHelper;
 use app\common\helper\TimeHelper;
 use app\common\model\Canada28Bets;
 use app\common\model\Bingo28Bets;
+use app\common\model\KenoBets;
 use app\common\model\Transactions;
 use app\common\model\Users;
 
@@ -146,7 +147,21 @@ class User
         }
         unset($bet);
 
-        $stats['recent_records']['bingo_bet'] = $betRecords;
+        // 获取最近100条下注记录
+        $betRecords = KenoBets::where('user_id', $user['uuid'])
+            ->field('amount, status, selected_numbers, created_at, period_number')
+            ->order('id desc')
+            ->limit(100)
+            ->select()
+            ->toArray();
+
+        // 计算输赢状态
+        foreach ($betRecords as &$bet) {
+            $bet['created_at'] = TimeHelper::convertFromUTC($bet['created_at']);
+            $bet['win_amount'] = $bet['status'] == 'win' ? $bet['amount'] : 0;
+        }
+        unset($bet);
+        $stats['recent_records']['keno_bet'] = $betRecords;
         return $stats;
     }
 }

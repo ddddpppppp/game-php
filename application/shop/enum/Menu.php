@@ -30,6 +30,14 @@ class Menu
                 'bingo28CrawList' => ['name' => '开奖记录', 'children' => ['bingo28CrawList.browse' => ['name' => '浏览']]],
             ]
         ],
+        'keno' => [
+            'name' => 'Keno',
+            'children' => [
+                'kenoProductSetting' => ['name' => '玩法设置', 'children' => ['kenoProductSetting.browse' => ['name' => '浏览']]],
+                'kenoOrderList' => ['name' => '投注记录', 'children' => ['kenoOrderList.browse' => ['name' => '浏览']]],
+                'kenoCrawList' => ['name' => '开奖记录', 'children' => ['kenoCrawList.browse' => ['name' => '浏览']]],
+            ]
+        ],
         'finance' => [
             'name' => '财务统计',
             'children' => [
