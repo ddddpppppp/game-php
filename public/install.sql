@@ -705,3 +705,101 @@ CREATE TABLE `game_keno_bets` (
   KEY `idx_match_count` (`match_count`),
   KEY `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 AUTO_INCREMENT=200000086 COLLATE=utf8mb4_unicode_ci COMMENT='Keno玩家投注记录表 - BCLC规则 (1-80)';
+
+
+-- Bingo游戏玩法配置表 (BCLC Bingo规则: 选10个号码1-80，开20个号码)
+-- DROP TABLE IF EXISTS `game_bingo_bet_types`;
+CREATE TABLE IF NOT EXISTS `game_bingo_bet_types` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `merchant_id` char(36) NOT NULL COMMENT '商户ID',
+    `type_name` varchar(50) NOT NULL COMMENT '玩法名称',
+    `type_key` varchar(50) NOT NULL COMMENT '玩法标识',
+    `description` varchar(200) DEFAULT NULL COMMENT '玩法描述',
+    `odds` decimal(10,2) NOT NULL COMMENT '赔率倍数',
+    `status` tinyint(2) DEFAULT 1 NOT NULL COMMENT '状态：1启用，0禁用',
+    `sort` int(11) DEFAULT 0 COMMENT '排序',
+    `created_at` datetime,
+    `updated_at` datetime,
+    `deleted_at` datetime DEFAULT null,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `merchant_type` (`merchant_id`, `type_key`),
+    KEY `merchant_id` (`merchant_id`),
+    KEY `status` (`status`),
+    KEY `sort` (`sort`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Bingo游戏玩法配置表 - BCLC规则 (1-80)';
+
+-- BCLC Bingo 赔率表 (选10个号码，基于匹配数量)
+INSERT INTO `game_bingo_bet_types` (`id`, `merchant_id`, `type_name`, `type_key`, `description`, `odds`, `status`, `sort`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'Match 10', 'match_10', 'Match 10 numbers - Jackpot', 100000.00, 1, 1, NOW(), NOW(), NULL),
+(2, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'Match 9', 'match_9', 'Match 9 numbers', 2500.00, 1, 2, NOW(), NOW(), NULL),
+(3, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'Match 8', 'match_8', 'Match 8 numbers', 250.00, 1, 3, NOW(), NOW(), NULL),
+(4, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'Match 7', 'match_7', 'Match 7 numbers', 25.00, 1, 4, NOW(), NOW(), NULL),
+(5, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'Match 6', 'match_6', 'Match 6 numbers', 5.00, 1, 5, NOW(), NOW(), NULL),
+(6, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'Match 5', 'match_5', 'Match 5 numbers', 1.00, 1, 6, NOW(), NOW(), NULL),
+(7, 'ad22ab51-1637-42c5-a82f-4b51382f7bc3', 'Match 0', 'match_0', 'Match 0 numbers - Special payout', 1.00, 1, 11, NOW(), NOW(), NULL);
+
+-- 动态赔率规则表 - 根据特殊条件调整赔率
+-- DROP TABLE IF EXISTS `game_bingo_dynamic_odds`;
+CREATE TABLE IF NOT EXISTS `game_bingo_dynamic_odds` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `merchant_id` char(36) NOT NULL COMMENT '商户ID',
+    `rule_name` varchar(100) NOT NULL COMMENT '规则名称',
+    `trigger_condition` varchar(50) NOT NULL COMMENT '触发条件：sum_range, sum_exact, sum_in',
+    `trigger_values` text COMMENT '触发条件值（JSON格式）',
+    `bet_type_adjustments` text COMMENT '投注类型赔率调整（JSON格式）',
+    `status` tinyint(2) DEFAULT 1 COMMENT '状态：1启用，0禁用',
+    `priority` int(11) DEFAULT 0 COMMENT '优先级',
+    `created_at` datetime,
+    `updated_at` datetime,
+    PRIMARY KEY (`id`),
+    KEY `merchant_id` (`merchant_id`),
+    KEY `status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='动态赔率规则表';
+
+-- 游戏期数表 - 记录每期游戏的状态和结果
+-- DROP TABLE IF EXISTS `game_bingo_draws`;
+CREATE TABLE `game_bingo_draws` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `period_number` varchar(20) NOT NULL COMMENT '期号，如：3333197',
+  `status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '状态：0-等待开奖，1-开奖中，2-已开奖，3-已结算',
+  `start_at` datetime NOT NULL COMMENT '开始投注时间',
+  `end_at` datetime NOT NULL COMMENT '停止投注时间',
+  `draw_at` datetime NOT NULL COMMENT '开奖时间',
+  `result_numbers` json DEFAULT NULL COMMENT '开奖号码，JSON格式存储三个数字',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  `deleted_at` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_period_number` (`period_number`),
+  KEY `idx_status` (`status`),
+  KEY `idx_draw_at` (`draw_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Bingo游戏期数表';
+
+-- Bingo玩家投注记录表 - 记录每个玩家的投注和结果 (BCLC规则: 1-80号码)
+-- DROP TABLE IF EXISTS `game_bingo_bets`;
+CREATE TABLE `game_bingo_bets` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `merchant_id` varchar(36) NOT NULL COMMENT '商户ID',
+  `user_id` varchar(36) NOT NULL COMMENT '用户ID',
+  `period_number` varchar(20) NOT NULL COMMENT '期号',
+  `selected_numbers` varchar(200) NOT NULL COMMENT '玩家选择的10个号码(1-80)，JSON格式: [1,5,12,...]',
+  `drawn_numbers` varchar(200) DEFAULT NULL COMMENT '开出的20个号码(1-80)，JSON格式: [3,7,12,...]',
+  `matched_numbers` varchar(200) DEFAULT NULL COMMENT '匹配的号码，JSON格式: [12,...]',
+  `match_count` tinyint(2) DEFAULT 0 COMMENT '匹配数量：0-10',
+  `amount` decimal(15,2) NOT NULL COMMENT '投注金额',
+  `multiplier` decimal(10,2) NOT NULL COMMENT '投注时的赔率（基于匹配数量）',
+  `win_amount` decimal(15,2) DEFAULT 0.00 COMMENT '中奖金额',
+  `status` varchar(20) NOT NULL DEFAULT 'pending' COMMENT '状态：pending-等待开奖，win-已中奖，lose-未中奖，cancel-已取消',
+  `ip` varchar(45) DEFAULT NULL COMMENT '投注IP地址',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  `settled_at` datetime DEFAULT NULL COMMENT '结算时间',
+  `deleted_at` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_merchant_id` (`merchant_id`),
+  KEY `idx_period_number` (`period_number`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_match_count` (`match_count`),
+  KEY `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 AUTO_INCREMENT=300000086 COLLATE=utf8mb4_unicode_ci COMMENT='Bingo玩家投注记录表 - BCLC规则 (1-80)';

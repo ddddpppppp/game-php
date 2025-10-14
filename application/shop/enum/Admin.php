@@ -39,6 +39,15 @@ class Admin
         'kenoCrawList',
         'kenoCrawList.browse',
 
+        // bingo
+        'bingo',
+        'bingoProductSetting',
+        'bingoProductSetting.browse',
+        'bingoOrderList',
+        'bingoOrderList.browse',
+        'bingoCrawList',
+        'bingoCrawList.browse',
+
         // finance
         'finance',
         'financeDashboard',

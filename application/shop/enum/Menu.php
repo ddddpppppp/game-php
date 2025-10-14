@@ -23,7 +23,15 @@ class Menu
                 'canada28CrawList' => ['name' => '开奖记录', 'children' => ['canada28CrawList.browse' => ['name' => '浏览']]],
             ]
         ],
-        'canada28' => [
+        'keno' => [
+            'name' => 'Keno',
+            'children' => [
+                'kenoProductSetting' => ['name' => '玩法设置', 'children' => ['kenoProductSetting.browse' => ['name' => '浏览']]],
+                'kenoOrderList' => ['name' => '投注记录', 'children' => ['kenoOrderList.browse' => ['name' => '浏览']]],
+                'kenoCrawList' => ['name' => '开奖记录', 'children' => ['kenoCrawList.browse' => ['name' => '浏览']]],
+            ]
+        ],
+        'bingo28' => [
             'name' => 'Bingo28',
             'children' => [
                 'bingo28ProductSetting' => ['name' => '玩法设置', 'children' => ['bingo28ProductSetting.browse' => ['name' => '浏览']]],
@@ -31,12 +39,12 @@ class Menu
                 'bingo28CrawList' => ['name' => '开奖记录', 'children' => ['bingo28CrawList.browse' => ['name' => '浏览']]],
             ]
         ],
-        'keno' => [
-            'name' => 'Keno',
+        'bingo' => [
+            'name' => 'Bingo',
             'children' => [
-                'kenoProductSetting' => ['name' => '玩法设置', 'children' => ['kenoProductSetting.browse' => ['name' => '浏览']]],
-                'kenoOrderList' => ['name' => '投注记录', 'children' => ['kenoOrderList.browse' => ['name' => '浏览']]],
-                'kenoCrawList' => ['name' => '开奖记录', 'children' => ['kenoCrawList.browse' => ['name' => '浏览']]],
+                'bingoProductSetting' => ['name' => '玩法设置', 'children' => ['bingoProductSetting.browse' => ['name' => '浏览']]],
+                'bingoOrderList' => ['name' => '投注记录', 'children' => ['bingoOrderList.browse' => ['name' => '浏览']]],
+                'bingoCrawList' => ['name' => '开奖记录', 'children' => ['bingoCrawList.browse' => ['name' => '浏览']]],
             ]
         ],
         'finance' => [

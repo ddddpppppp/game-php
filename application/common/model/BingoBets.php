@@ -5,7 +5,7 @@ namespace app\common\model;
 use app\common\model\BaseModel;
 
 /**
- * Keno投注记录模型 (BCLC规则: 1-80号码)
+ * Bingo投注记录模型 (BCLC规则: 1-80号码)
  * 
  * @property integer $id 主键ID
  * @property string $merchant_id 商户ID
@@ -25,13 +25,13 @@ use app\common\model\BaseModel;
  * @property \DateTime $settled_at 结算时间
  * @property \DateTime $deleted_at 删除时间
  */
-class KenoBets extends BaseModel
+class BingoBets extends BaseModel
 {
     use \think\model\concern\SoftDelete;
 
     protected $deleteTime = 'deleted_at';
     protected $connection = 'mysql';
-    protected $table = 'game_keno_bets';
+    protected $table = 'game_bingo_bets';
 
     // 主键字段
     protected $pk = 'id';
@@ -144,11 +144,11 @@ class KenoBets extends BaseModel
      */
     public function draw()
     {
-        return $this->belongsTo(KenoDraws::class, 'period_number', 'period_number');
+        return $this->belongsTo(BingoDraws::class, 'period_number', 'period_number');
     }
 
     /**
-     * 创建投注记录 (Keno规则)
+     * 创建投注记录 (Bingo规则)
      */
     public static function createBet($data)
     {
@@ -195,7 +195,7 @@ class KenoBets extends BaseModel
     }
 
     /**
-     * 获取某期的投注统计 (Keno规则)
+     * 获取某期的投注统计 (Bingo规则)
      */
     public static function getPeriodStats($periodNumber)
     {
