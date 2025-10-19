@@ -89,12 +89,6 @@ class Admin extends Controller
         $takeout = false;
         /** @var array $access **/
         $access = $this->role->access;
-        foreach ($access as $item) {
-            if (in_array($item, Menu::ACCESS_TAKEOUT)) {
-                $takeout = true;
-                break;
-            }
-        }
         return $this->success(['list' => $list, 'takeout' => $takeout]);
     }
 

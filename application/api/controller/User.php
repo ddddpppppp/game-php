@@ -941,10 +941,12 @@ class User extends Controller
 
             if ($latestGiftRecord) {
                 // 计算自最近gift记录时间之后的投注金额
-                $totalBetAmount = Db::name('canada28_bets')
+                $totalBetAmount = Db::name('user_balances')
                     ->where('user_id', $user->uuid)
+                    ->where('type', 'game_bet')
                     ->where('created_at', '>=', $latestGiftRecord['created_at'])
                     ->sum('amount');
+                $totalBetAmount = abs($totalBetAmount);
 
                 // 基于最近gift记录的金额计算需要的投注金额
                 $requiredBetAmount = $latestGiftRecord['amount'] * $giftTransactionTimes;

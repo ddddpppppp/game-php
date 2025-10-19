@@ -48,7 +48,7 @@ class Game extends Controller
     {
         $this->params = request()->param();
         $token = request()->header('Authorization') ?: request()->header('Token');
-        if (in_array(request()->action(), ['getcanada28game', 'getcanada28messages', 'getgamecurrentdraw', 'getcanada28drawhistory', 'getbingo28game', 'getbingo28messages', 'getbingo28gamecurrentdraw', 'getbingo28drawhistory', 'getkenogame', 'getkenogamecurrentdraw', 'getkenodrawhistory']) && empty($token)) {
+        if (in_array(request()->action(), ['getcanada28game', 'getcanada28messages', 'getgamecurrentdraw', 'getcanada28drawhistory', 'getbingo28game', 'getbingo28messages', 'getbingo28gamecurrentdraw', 'getbingo28drawhistory', 'getkenogame', 'getkenogamecurrentdraw', 'getkenodrawhistory', 'getbingo28bethistory', 'getkenobethistory']) && empty($token)) {
             return;
         }
         if (empty($token)) {
@@ -895,7 +895,7 @@ class Game extends Controller
                 'time_left' => max(0, strtotime($currentDraw['end_at']) - time()) // 剩余秒数
             ];
 
-            $lastDrawNumbers = KenoDraws::where('status', KenoDraws::STATUS_DRAWN)->value('result_numbers');
+            $lastDrawNumbers = KenoDraws::where('status', 'in', [KenoDraws::STATUS_DRAWN, KenoDraws::STATUS_SETTLED])->order('id desc')->value('result_numbers');
 
             // 获取动态赔率规则
             $dynamicOddsRules = Db::table('game_keno_dynamic_odds')
@@ -1213,7 +1213,7 @@ class Game extends Controller
                 'time_left' => max(0, strtotime($currentDraw['end_at']) - time()) // 剩余秒数
             ];
 
-            $lastDrawNumbers = BingoDraws::where('status', BingoDraws::STATUS_DRAWN)->value('result_numbers');
+            $lastDrawNumbers = BingoDraws::where('status', 'in', [BingoDraws::STATUS_DRAWN, BingoDraws::STATUS_SETTLED])->order('id desc')->value('result_numbers');
 
             // 获取动态赔率规则
             $dynamicOddsRules = Db::table('game_bingo_dynamic_odds')
