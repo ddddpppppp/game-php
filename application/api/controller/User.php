@@ -59,41 +59,8 @@ class User extends Controller
         }
 
         $this->user = $user;
-
-        // 设备登录状态检查
-        // $deviceCode = request()->header('Device-Code') ?: trim($this->params['device_code'] ?? '');
-        // if (!empty($deviceCode)) {
-        //     $this->checkDeviceBinding($user->uuid, $deviceCode);
-        // }
     }
 
-    /**
-     * 检查设备绑定状态
-     */
-    private function checkDeviceBinding($userId, $deviceCode)
-    {
-        $deviceKey = sprintf(EnumUser::USER_DEVICE_KEY, $userId);
-        $expectedDeviceCode = Cache::get($deviceKey);
-
-        // 如果用户已绑定设备，但当前设备码不匹配，说明在其他设备登录了
-        if ($expectedDeviceCode && $expectedDeviceCode !== $deviceCode) {
-            return $this->error('Your account has been logged in on another device. Please log in again.', 401);
-        }
-
-        // 检查当前设备是否被其他用户占用
-        $deviceUserKey = sprintf(EnumUser::DEVICE_USER_KEY, $deviceCode);
-        $boundUserId = Cache::get($deviceUserKey);
-
-        if ($boundUserId && $boundUserId !== $userId) {
-            return $this->error('This device is logged in with another account. Please log out first.', 401);
-        }
-
-        // 如果没有绑定记录，重新绑定（用户可能刚登录或缓存过期）
-        if (!$expectedDeviceCode) {
-            Cache::set($deviceKey, $deviceCode, 2592000);
-            Cache::set($deviceUserKey, $userId, 2592000);
-        }
-    }
 
     /**
      * Send email verification code
