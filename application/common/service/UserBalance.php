@@ -108,6 +108,64 @@ class UserBalance
     }
 
     /**
+     * 用户清分 - 将用户余额重置为0
+     * @param int $userId 用户ID
+     * @param string $description 描述
+     * @return bool
+     * @throws \Exception
+     */
+    public static function clearUserBalance($userId, $description = '管理员清分')
+    {
+        \think\Db::startTrans();
+        try {
+            // 获取用户信息
+            $user = Users::where('id', $userId)->field("balance,balance_frozen,id")->find();
+            if (!$user) {
+                throw new \Exception('用户不存在');
+            }
+
+            // 如果余额已经为0，直接返回
+            if ($user->balance <= 0 && $user->balance_frozen <= 0) {
+                \think\Db::commit();
+                return true;
+            }
+
+            $balanceBefore = $user->balance;
+            $frozenBalanceBefore = $user->balance_frozen;
+
+            // 清空普通余额
+            if ($user->balance > 0) {
+                $user->balance = 0;
+                UserBalances::create([
+                    'user_id' => $userId,
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => 0,
+                    'amount' => -$balanceBefore,
+                    'type' => 'clear_score',
+                    'description' => $description,
+                    'related_id' => '',
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]);
+            }
+
+            // 清空冻结余额
+            if ($user->balance_frozen > 0) {
+                UserFrozenBalance::clearUserBalance($userId, $frozenBalanceBefore, $description);
+                $user->balance_frozen = 0;
+            }
+
+            $user->save();
+
+            \think\Db::commit();
+            return true;
+        } catch (\Exception $e) {
+            \think\Db::rollback();
+            throw $e;
+        }
+    }
+
+    /**
      * 完成充值
      */
     public static function completeDeposit($deposit)

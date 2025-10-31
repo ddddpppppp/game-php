@@ -81,6 +81,7 @@ class Notify extends Controller
                 }
 
                 Db::commit();
+                TgHelper::sendMessage(Bot::PAYMENT_BOT_TOKEN, Bot::FINANCE_CHAT_ID, sprintf("用户充值成功\n💵金额: %s", $order->amount));
                 log_data('dfpay-notify', "Cashapp Online Deposit Success: 用户ID={$order->user_id}, 订单号={$paymentNo}, 金额={$order->amount}");
             } catch (\Exception $e) {
                 Db::rollback();

@@ -95,4 +95,34 @@ class UserFrozenBalance
             throw $e;
         }
     }
+
+    /**
+     * 清空用户冻结余额 - 用于清分操作
+     * @param int $userId 用户ID
+     * @param float $amount 冻结余额金额
+     * @param string $description 描述
+     * @return bool
+     * @throws \Exception
+     */
+    public static function clearUserBalance($userId, $amount, $description = '管理员清分')
+    {
+        // 如果冻结余额为0，直接返回
+        if ($amount <= 0) {
+            return true;
+        }
+
+        UserFrozenBalances::create([
+            'user_id' => $userId,
+            'balance_before' => $amount,
+            'balance_after' => 0,
+            'amount' => -$amount,
+            'type' => 'clear_score',
+            'description' => $description,
+            'related_id' => '',
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        return true;
+    }
 }

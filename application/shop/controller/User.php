@@ -858,4 +858,115 @@ class User extends Controller
         }
         return $this->success('Messages marked as read');
     }
+
+    /**
+     * 用户清分 - 将用户余额重置为0
+     */
+    public function clearUserBalance()
+    {
+        try {
+            $userId = $this->params['user_id'] ?? 0;
+            $remark = $this->params['remark'] ?? '管理员清分';
+
+            if (empty($userId)) {
+                return $this->error('参数错误');
+            }
+
+            $model = new \app\common\model\Users();
+            $user = $model->find($userId);
+            if (!$user) {
+                return $this->error('用户不存在');
+            }
+
+            // 记录清分前的余额
+            $balanceBefore = $user->balance;
+            $frozenBalanceBefore = $user->balance_frozen;
+
+            // 如果余额已经为0，提示无需清分
+            if ($balanceBefore <= 0 && $frozenBalanceBefore <= 0) {
+                return $this->error('用户余额已经为0，无需清分');
+            }
+
+            // 执行清分操作
+            UserBalance::clearUserBalance($userId, $remark);
+
+            $message = sprintf(
+                '用户清分成功，清分前余额：%.2f，冻结余额：%.2f',
+                $balanceBefore,
+                $frozenBalanceBefore
+            );
+        } catch (\Exception $e) {
+            return $this->error('操作失败：' . $e->getMessage());
+        }
+
+        // 记录操作日志
+        AdminOperationLog::saveLog(
+            $this->admin->uuid,
+            $this->admin->merchant_id ?? '',
+            '清分用户余额，用户ID：' . $userId . '，备注：' . $remark
+        );
+
+        return $this->success([], 1, $message);
+    }
+
+    /**
+     * 批量用户清分
+     */
+    public function batchClearUserBalance()
+    {
+        try {
+            $userIds = $this->params['user_ids'] ?? [];
+            $remark = $this->params['remark'] ?? '管理员批量清分';
+
+            if (empty($userIds) || !is_array($userIds)) {
+                return $this->error('参数错误');
+            }
+
+            $successCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($userIds as $userId) {
+                try {
+                    $user = Users::find($userId);
+                    if (!$user) {
+                        $failedCount++;
+                        $errors[] = "用户ID {$userId} 不存在";
+                        continue;
+                    }
+
+                    // 跳过余额已经为0的用户
+                    if ($user->balance <= 0 && $user->balance_frozen <= 0) {
+                        continue;
+                    }
+
+                    UserBalance::clearUserBalance($userId, $remark);
+                    $successCount++;
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "用户ID {$userId} 清分失败：" . $e->getMessage();
+                }
+            }
+
+            $message = "批量清分完成，成功 {$successCount} 个";
+            if ($failedCount > 0) {
+                $message .= "，失败 {$failedCount} 个";
+            }
+        } catch (\Exception $e) {
+            return $this->error('操作失败：' . $e->getMessage());
+        }
+
+        // 记录操作日志
+        AdminOperationLog::saveLog(
+            $this->admin->uuid,
+            $this->admin->merchant_id ?? '',
+            '批量清分用户余额，用户数：' . count($userIds) . '，备注：' . $remark
+        );
+
+        return $this->success([
+            'success_count' => $successCount,
+            'failed_count' => $failedCount,
+            'errors' => $errors
+        ], 1, $message);
+    }
 }

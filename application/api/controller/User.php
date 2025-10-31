@@ -59,6 +59,40 @@ class User extends Controller
         }
 
         $this->user = $user;
+
+        // 设备登录状态检查
+        // $deviceCode = request()->header('Device-Code') ?: trim($this->params['device_code'] ?? '');
+        // if (!empty($deviceCode)) {
+        //     $this->checkDeviceBinding($user->uuid, $deviceCode);
+        // }
+    }
+
+    /**
+     * 检查设备绑定状态
+     */
+    private function checkDeviceBinding($userId, $deviceCode)
+    {
+        $deviceKey = sprintf(EnumUser::USER_DEVICE_KEY, $userId);
+        $expectedDeviceCode = Cache::get($deviceKey);
+
+        // 如果用户已绑定设备，但当前设备码不匹配，说明在其他设备登录了
+        if ($expectedDeviceCode && $expectedDeviceCode !== $deviceCode) {
+            return $this->error('Your account has been logged in on another device. Please log in again.', 401);
+        }
+
+        // 检查当前设备是否被其他用户占用
+        $deviceUserKey = sprintf(EnumUser::DEVICE_USER_KEY, $deviceCode);
+        $boundUserId = Cache::get($deviceUserKey);
+
+        if ($boundUserId && $boundUserId !== $userId) {
+            return $this->error('This device is logged in with another account. Please log out first.', 401);
+        }
+
+        // 如果没有绑定记录，重新绑定（用户可能刚登录或缓存过期）
+        if (!$expectedDeviceCode) {
+            Cache::set($deviceKey, $deviceCode, 2592000);
+            Cache::set($deviceUserKey, $userId, 2592000);
+        }
     }
 
     /**
@@ -214,6 +248,16 @@ class User extends Controller
                 UserBalance::addUserBalance($user->id, $gift, 'gift', "Bonus for new user, gift amount: {$gift}", $user->id);
             }
 
+            // 设备唯一登录 - 绑定设备和用户（注册即登录）
+            if (!empty($deviceCode)) {
+                $deviceKey = sprintf(EnumUser::USER_DEVICE_KEY, $user->uuid);
+                $deviceUserKey = sprintf(EnumUser::DEVICE_USER_KEY, $deviceCode);
+
+                // 绑定设备和用户（3天过期）
+                Cache::set($deviceKey, $deviceCode, 86400 * 3);
+                Cache::set($deviceUserKey, $user->uuid, 86400 * 3);
+            }
+
             // Clear verification code
             Cache::rm($cacheKey);
 
@@ -247,6 +291,8 @@ class User extends Controller
         $email = trim($this->params['email']);
         $password = trim($this->params['password']);
         $isApp = $this->params['isApp'] ? 1 : -1;
+        $deviceCode = trim($this->params['device_code'] ?? '');
+
         if (empty($email) || empty($password)) {
             return $this->error('Email and password are required');
         }
@@ -262,10 +308,32 @@ class User extends Controller
             Cache::set(sprintf(EnumUser::USER_IP_LOCK_KEY, request()->ip()), $retryTimes + 1, 3600);
             return $this->error('Invalid email or password');
         }
-
         if (!hash_equals($user->password, create_password($user->salt, $password))) {
             Cache::set(sprintf(EnumUser::USER_IP_LOCK_KEY, request()->ip()), $retryTimes + 1, 3600);
             return $this->error('Invalid email or password');
+        }
+
+        // 设备唯一登录验证
+        if (!empty($deviceCode)) {
+            $deviceKey = sprintf(EnumUser::USER_DEVICE_KEY, $user->uuid);
+            $existingDeviceCode = Cache::get($deviceKey);
+
+            // 如果用户已在其他设备登录，且设备码不同，则拒绝登录
+            if ($existingDeviceCode && $existingDeviceCode !== $deviceCode) {
+                return $this->error('This account is already logged in on another device. Please log out from the other device first.');
+            }
+
+            // 检查设备是否被其他用户使用
+            $deviceUserKey = sprintf(EnumUser::DEVICE_USER_KEY, $deviceCode);
+            $existingUserId = Cache::get($deviceUserKey);
+
+            if ($existingUserId && $existingUserId !== $user->uuid) {
+                return $this->error('This device is already logged in with another account. Please log out first.');
+            }
+
+            // 绑定设备和用户（3天过期）
+            Cache::set($deviceKey, $deviceCode, 86400 * 3);
+            Cache::set($deviceUserKey, $user->uuid, 86400 * 3);
         }
 
         // Generate token
@@ -438,6 +506,21 @@ class User extends Controller
      */
     public function logout()
     {
+        // 清除设备绑定
+        if ($this->user) {
+            $deviceKey = sprintf(EnumUser::USER_DEVICE_KEY, $this->user->uuid);
+            $deviceCode = Cache::get($deviceKey);
+
+            if ($deviceCode) {
+                // 删除用户-设备绑定
+                Cache::delete($deviceKey);
+
+                // 删除设备-用户绑定
+                $deviceUserKey = sprintf(EnumUser::DEVICE_USER_KEY, $deviceCode);
+                Cache::delete($deviceUserKey);
+            }
+        }
+
         // In a full implementation, you would invalidate the token here
         // For now, just return success as token expiration is handled client-side
         return $this->success(['message' => 'Logged out successfully']);
@@ -942,7 +1025,7 @@ class User extends Controller
             if ($latestGiftRecord) {
                 // 计算自最近gift记录时间之后的投注金额
                 $totalBetAmount = Db::name('user_balances')
-                    ->where('user_id', $user->uuid)
+                    ->where('user_id', $user->id)
                     ->where('type', 'game_bet')
                     ->where('created_at', '>=', $latestGiftRecord['created_at'])
                     ->sum('amount');

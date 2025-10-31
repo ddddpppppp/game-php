@@ -15,7 +15,7 @@ namespace think;
 // Handle CORS for all requests at the earliest point
 header("Access-Control-Allow-Origin: *");
 header('Access-Control-Allow-Credentials: true');
-header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, Token, Timezone, sec-ch-ua, sec-ch-ua-mobile, sec-ch-ua-platform, referer, user-agent");
+header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, Token, Timezone, sec-ch-ua, sec-ch-ua-mobile, sec-ch-ua-platform, referer, user-agent, Device-Code");
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE, PATCH');
 
 // Handle OPTIONS preflight requests immediately
